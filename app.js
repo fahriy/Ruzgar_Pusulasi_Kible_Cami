@@ -58,7 +58,23 @@
     centerWindSpeed: $("centerWindSpeed"),
     centerWindDirection: $("centerWindDirection"),
     centerWindTop: $("centerWindTop"),
-    centerWindBottom: $("centerWindBottom")
+    centerWindBottom: $("centerWindBottom"),
+    mobileWindBtn: $("mobileWindBtn"),
+    mobileSatelliteBtn: $("mobileSatelliteBtn"),
+    mobileRecenterBtn: $("mobileRecenterBtn"),
+    mobileTargetsBtn: $("mobileTargetsBtn"),
+    mobileMenuBtn: $("mobileMenuBtn"),
+    mobileDrawer: $("mobileDrawer"),
+    mobileDrawerBackdrop: $("mobileDrawerBackdrop"),
+    mobileDrawerClose: $("mobileDrawerClose"),
+    drawerWindBtn: $("drawerWindBtn"),
+    drawerSatelliteBtn: $("drawerSatelliteBtn"),
+    drawerRecenterBtn: $("drawerRecenterBtn"),
+    drawerManualBtn: $("drawerManualBtn"),
+    drawerCompassBtn: $("drawerCompassBtn"),
+    mobileFollowToggle: $("mobileFollowToggle"),
+    mobileLocationStatus: $("mobileLocationStatus"),
+    mobileWindStatus: $("mobileWindStatus")
   };
 
   function initMap() {
@@ -190,8 +206,9 @@
 
   function updateLocationUI() {
     if (!currentPosition) return;
-    els.locationStatus.textContent =
-      `${currentPosition.lat.toFixed(6)}, ${currentPosition.lng.toFixed(6)}${manualLocation ? " (elle)" : ""}`;
+    const locText = `${currentPosition.lat.toFixed(6)}, ${currentPosition.lng.toFixed(6)}${manualLocation ? " (elle)" : ""}`;
+    els.locationStatus.textContent = locText;
+    if (els.mobileLocationStatus) els.mobileLocationStatus.textContent = locText;
     updateAccuracyOnly();
   }
 
@@ -441,6 +458,7 @@
 
     if (enable) {
       els.followToggle.checked=false;
+      if (els.mobileFollowToggle) els.mobileFollowToggle.checked=false;
       if (!currentPosition) {
         const c=map.getCenter();
         currentPosition={lat:c.lat,lng:c.lng,accuracy:0};
@@ -469,6 +487,7 @@
 
     // tile katmanı değişince boyutu tekrar hesapla
     setTimeout(()=>map.invalidateSize(false),100);
+    setTimeout(syncMobileControls,0);
   }
 
   function scheduleWindRefresh() {
@@ -760,6 +779,7 @@
       clearCenterWindUI();
       els.windStatus.textContent="kapalı";
     }
+    setTimeout(syncMobileControls,0);
   }
 
   function normalize360(d){return ((d%360)+360)%360;}
@@ -864,6 +884,35 @@
     }
   }
 
+
+  function openMobileDrawer() {
+    if (!els.mobileDrawer) return;
+    els.mobileDrawer.classList.add("open");
+    els.mobileDrawer.setAttribute("aria-hidden","false");
+    if (els.mobileDrawerBackdrop) {
+      els.mobileDrawerBackdrop.hidden=false;
+      requestAnimationFrame(()=>els.mobileDrawerBackdrop.classList.add("open"));
+    }
+  }
+
+  function closeMobileDrawer() {
+    if (!els.mobileDrawer) return;
+    els.mobileDrawer.classList.remove("open");
+    els.mobileDrawer.setAttribute("aria-hidden","true");
+    if (els.mobileDrawerBackdrop) {
+      els.mobileDrawerBackdrop.classList.remove("open");
+      setTimeout(()=>{ els.mobileDrawerBackdrop.hidden=true; },220);
+    }
+  }
+
+  function syncMobileControls() {
+    if (els.mobileWindBtn) els.mobileWindBtn.classList.toggle("is-active", windOn);
+    if (els.mobileSatelliteBtn) els.mobileSatelliteBtn.classList.toggle("is-active", satelliteOn);
+    if (els.mobileFollowToggle) els.mobileFollowToggle.checked=els.followToggle.checked;
+    if (els.mobileWindStatus) els.mobileWindStatus.textContent=els.windStatus.textContent;
+    if (els.mobileLocationStatus) els.mobileLocationStatus.textContent=els.locationStatus.textContent;
+  }
+
   els.orientationBtn.addEventListener("click",enableOrientation);
   els.satelliteBtn.addEventListener("click",toggleSatellite);
   els.windBtn.addEventListener("click",toggleWind);
@@ -886,6 +935,39 @@
   els.clearBtn.addEventListener("click",()=>{
     if(targets.length&&confirm("Tüm çizgiler silinsin mi?"))clearTargets();
   });
+
+
+  if (els.mobileWindBtn) els.mobileWindBtn.addEventListener("click",()=>{ toggleWind(); syncMobileControls(); });
+  if (els.mobileSatelliteBtn) els.mobileSatelliteBtn.addEventListener("click",()=>{ toggleSatellite(); syncMobileControls(); });
+  if (els.mobileRecenterBtn) els.mobileRecenterBtn.addEventListener("click",()=>els.recenterBtn.click());
+  if (els.mobileTargetsBtn) els.mobileTargetsBtn.addEventListener("click",()=>{
+    const first=els.targets?.querySelector(".target-row");
+    if(first) first.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+  });
+  if (els.mobileMenuBtn) els.mobileMenuBtn.addEventListener("click",openMobileDrawer);
+  if (els.mobileDrawerClose) els.mobileDrawerClose.addEventListener("click",closeMobileDrawer);
+  if (els.mobileDrawerBackdrop) els.mobileDrawerBackdrop.addEventListener("click",closeMobileDrawer);
+
+  if (els.drawerWindBtn) els.drawerWindBtn.addEventListener("click",()=>{ toggleWind(); syncMobileControls(); });
+  if (els.drawerSatelliteBtn) els.drawerSatelliteBtn.addEventListener("click",()=>{ toggleSatellite(); syncMobileControls(); });
+  if (els.drawerRecenterBtn) els.drawerRecenterBtn.addEventListener("click",()=>{ els.recenterBtn.click(); closeMobileDrawer(); });
+  if (els.drawerManualBtn) els.drawerManualBtn.addEventListener("click",()=>{ setManualMode(true); closeMobileDrawer(); });
+  if (els.drawerCompassBtn) els.drawerCompassBtn.addEventListener("click",()=>{ enableOrientation(); closeMobileDrawer(); });
+
+  if (els.mobileFollowToggle) {
+    els.mobileFollowToggle.addEventListener("change",()=>{
+      els.followToggle.checked=els.mobileFollowToggle.checked;
+    });
+  }
+  els.followToggle.addEventListener("change",syncMobileControls);
+
+  // Mobil çekmece açıkken Escape ile kapat.
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape") closeMobileDrawer();
+  });
+
+  // Durum bilgilerini mobil çekmeceye periyodik yansıt.
+  setInterval(syncMobileControls,1000);
 
   loadTargets();
   initMap();

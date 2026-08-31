@@ -28,3 +28,14 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Harita: OpenStreetMap
 - Uydu: Esri World Imagery
 - Rüzgâr: Open‑Meteo Forecast API, 10 m rüzgâr hızı/yönü
+
+
+## Mobil v2
+- Telefonda harita ana çalışma alanı olacak şekilde yeniden düzenlendi.
+- Alt kısımda 5 büyük mobil kontrol bulunur: Rüzgâr, Uydu, Konum, Hedefler, Menü.
+- Gelişmiş kontroller alttan açılan mobil çekmeceye taşındı.
+- Hedefler telefon ekranında yatay kaydırılabilir kartlar olarak gösterilir.
+- Merkez rüzgâr göstergesi mobilde küçültüldü.
+- iPhone güvenli alanı (`safe-area-inset-bottom`) desteklenir.
+- Dokunmatik butonlar daha büyük hale getirildi.
+- Masaüstü arayüzü korunur; mobil tasarım yalnızca dar ekranlarda devreye girer.

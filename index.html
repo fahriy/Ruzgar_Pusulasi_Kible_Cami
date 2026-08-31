@@ -157,6 +157,59 @@
         </div>
       </section>
 
+
+      <nav class="mobile-toolbar" aria-label="Mobil harita kontrolleri">
+        <button id="mobileWindBtn" type="button">
+          <span>≋</span><small>Rüzgâr</small>
+        </button>
+        <button id="mobileSatelliteBtn" type="button">
+          <span>◫</span><small>Uydu</small>
+        </button>
+        <button id="mobileRecenterBtn" type="button">
+          <span>⌾</span><small>Konum</small>
+        </button>
+        <button id="mobileTargetsBtn" type="button">
+          <span>◎</span><small>Hedefler</small>
+        </button>
+        <button id="mobileMenuBtn" type="button">
+          <span>☰</span><small>Menü</small>
+        </button>
+      </nav>
+
+      <div id="mobileDrawerBackdrop" class="mobile-drawer-backdrop" hidden></div>
+      <aside id="mobileDrawer" class="mobile-drawer" aria-hidden="true">
+        <div class="mobile-drawer-handle"></div>
+        <div class="mobile-drawer-head">
+          <div>
+            <small>KONTROLLER</small>
+            <strong>Harita Ayarları</strong>
+          </div>
+          <button id="mobileDrawerClose" type="button" aria-label="Kapat">×</button>
+        </div>
+
+        <div class="mobile-drawer-grid">
+          <button id="drawerWindBtn" type="button"><span>≋</span><b>Rüzgâr</b><small>Aç / kapat</small></button>
+          <button id="drawerSatelliteBtn" type="button"><span>◫</span><b>Harita</b><small>Uydu / normal</small></button>
+          <button id="drawerRecenterBtn" type="button"><span>⌾</span><b>Konum</b><small>Merkeze dön</small></button>
+          <button id="drawerManualBtn" type="button"><span>✥</span><b>Konumu düzelt</b><small>Elle ayarla</small></button>
+          <button id="drawerCompassBtn" type="button"><span>⌁</span><b>Pusula</b><small>Sensörü aç</small></button>
+        </div>
+
+        <label class="mobile-gps-row">
+          <div>
+            <strong>GPS takibi</strong>
+            <small>Konum değişince harita takip etsin</small>
+          </div>
+          <input id="mobileFollowToggle" type="checkbox" checked />
+          <i></i>
+        </label>
+
+        <div class="mobile-drawer-status">
+          <div><small>Konum</small><strong id="mobileLocationStatus">—</strong></div>
+          <div><small>Rüzgâr</small><strong id="mobileWindStatus">—</strong></div>
+        </div>
+      </aside>
+
       <div class="hidden-compass" aria-hidden="true">
         <div id="needle" class="needle"><div class="needle-arrow"></div></div>
       </div>
