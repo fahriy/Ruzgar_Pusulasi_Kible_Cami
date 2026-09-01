@@ -77,6 +77,15 @@
           <button id="orientationBtn" class="control-btn" type="button">
             <span class="control-icon">⌁</span><span>Pusulayı Aç</span>
           </button>
+          <button id="qiblaBtn" class="control-btn qibla-control" type="button">
+            <span class="control-icon">◈</span><span>Kıbleyi Aç</span>
+          </button>
+          <button id="headingArrowBtn" class="control-btn" type="button">
+            <span class="control-icon">➤</span><span>Bakış Okunu Aç</span>
+          </button>
+          <button id="centerWindToggleBtn" class="control-btn" type="button">
+            <span class="control-icon">⊕</span><span>Merkez Rüzgârını Aç</span>
+          </button>
 
           <label class="switch-row">
             <span><b>GPS Takibi</b><small>Konum değişince haritayı takip et</small></span>
@@ -106,10 +115,14 @@
             <span class="badge-dot"></span>
             <div>
               <small>Harita merkezi rüzgârı</small>
-              <strong id="centerWindTop">Rüzgâr kapalı</strong>
+              <strong id="centerWindTop">Kapalı</strong>
             </div>
           </div>
           <div class="map-hint">Hedef eklemek için haritaya tıkla · Noktayı sürükleyerek taşı</div>
+        </div>
+
+        <div id="qiblaAligned" class="qibla-aligned" hidden aria-live="polite">
+          <span>✓</span><strong>Kıble ile hizalandı</strong>
         </div>
 
         <div id="centerWind" class="center-wind" hidden aria-live="polite">
@@ -168,8 +181,8 @@
         <button id="mobileRecenterBtn" type="button">
           <span>⌾</span><small>Konum</small>
         </button>
-        <button id="mobileTargetsBtn" type="button">
-          <span>◎</span><small>Hedefler</small>
+        <button id="mobileQiblaBtn" type="button">
+          <span>◈</span><small>Kıble</small>
         </button>
         <button id="mobileMenuBtn" type="button">
           <span>☰</span><small>Menü</small>
@@ -193,6 +206,9 @@
           <button id="drawerRecenterBtn" type="button"><span>⌾</span><b>Konum</b><small>Merkeze dön</small></button>
           <button id="drawerManualBtn" type="button"><span>✥</span><b>Konumu düzelt</b><small>Elle ayarla</small></button>
           <button id="drawerCompassBtn" type="button"><span>⌁</span><b>Pusula</b><small>Sensörü aç</small></button>
+          <button id="drawerQiblaBtn" type="button"><span>◈</span><b>Kıble</b><small>Kâbe yönünü göster</small></button>
+          <button id="drawerHeadingBtn" type="button"><span>➤</span><b>Bakış oku</b><small>Telefon yönünü göster</small></button>
+          <button id="drawerCenterWindBtn" type="button"><span>⊕</span><b>Merkez rüzgârı</b><small>Harita ortasında göster</small></button>
         </div>
 
         <label class="mobile-gps-row">

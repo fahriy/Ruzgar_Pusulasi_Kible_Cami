@@ -39,3 +39,15 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - iPhone güvenli alanı (`safe-area-inset-bottom`) desteklenir.
 - Dokunmatik butonlar daha büyük hale getirildi.
 - Masaüstü arayüzü korunur; mobil tasarım yalnızca dar ekranlarda devreye girer.
+
+
+## Kıble ve yön özellikleri
+- Kıble modu Kâbe koordinatına büyük daire hattı çizer.
+- Kıble açılınca telefon bakış oku otomatik açılır.
+- Bakış yönü ile kıble yönü ±3° içinde eşleşirse yeşil hizalama işareti görünür.
+- Bakış oku bağımsız olarak açılıp kapatılabilir.
+- Merkez rüzgâr göstergesi bağımsızdır ve varsayılan kapalıdır.
+- Genel rüzgâr katmanı uygulama açıldığında varsayılan açıktır.
+- Hedef rüzgâr oklarında hız etiketi kaldırılmıştır.
+- Hedefler silinip eklendikçe 1,2,3... şeklinde yeniden numaralanır.
+- Geolocation uygulama içinde tek `watchPosition` ile başlatılır; gereksiz tekrar izin isteme çağrıları engellenmiştir.

@@ -22,11 +22,23 @@
   let nextId = 1;
   let watchId = null;
 
-  let windOn = false;
+  let windOn = true;
+  let centerWindOn = false;
+  let headingArrowOn = false;
+  let qiblaOn = false;
   let windLayer = null;
   let windAbort = null;
   let windTimer = null;
   let windInterval = null;
+  let geoWatchId = null;
+  let geoStarted = false;
+
+  const KAABA = {lat:21.422487, lng:39.826206};
+  const QIBLA_ALIGN_TOLERANCE = 3;
+  let headingMarker = null;
+  let qiblaLayer = null;
+  let qiblaKaabaMarker = null;
+  let qiblaAlignMarker = null;
 
   const $ = id => document.getElementById(id);
   const els = {
@@ -62,7 +74,7 @@
     mobileWindBtn: $("mobileWindBtn"),
     mobileSatelliteBtn: $("mobileSatelliteBtn"),
     mobileRecenterBtn: $("mobileRecenterBtn"),
-    mobileTargetsBtn: $("mobileTargetsBtn"),
+    mobileQiblaBtn: $("mobileQiblaBtn"),
     mobileMenuBtn: $("mobileMenuBtn"),
     mobileDrawer: $("mobileDrawer"),
     mobileDrawerBackdrop: $("mobileDrawerBackdrop"),
@@ -74,7 +86,14 @@
     drawerCompassBtn: $("drawerCompassBtn"),
     mobileFollowToggle: $("mobileFollowToggle"),
     mobileLocationStatus: $("mobileLocationStatus"),
-    mobileWindStatus: $("mobileWindStatus")
+    mobileWindStatus: $("mobileWindStatus"),
+    qiblaBtn: $("qiblaBtn"),
+    headingArrowBtn: $("headingArrowBtn"),
+    centerWindToggleBtn: $("centerWindToggleBtn"),
+    drawerQiblaBtn: $("drawerQiblaBtn"),
+    drawerHeadingBtn: $("drawerHeadingBtn"),
+    drawerCenterWindBtn: $("drawerCenterWindBtn"),
+    qiblaAligned: $("qiblaAligned")
   };
 
   function initMap() {
@@ -112,6 +131,7 @@
 
     map.on("moveend zoomend", () => {
       if (windOn) scheduleWindRefresh();
+      if (qiblaOn) updateQiblaLayer();
     });
 
     setTimeout(() => map.invalidateSize(true), 60);
@@ -136,20 +156,33 @@
 
       targets = raw
         .filter(x => Number.isFinite(x?.lat) && Number.isFinite(x?.lng))
-        .slice(0, 50)
-        .map((x, i) => ({
-          id: Number.isInteger(x.id) ? x.id : i + 1,
-          lat: x.lat,
-          lng: x.lng,
-          name: typeof x.name === "string" ? x.name : `Hedef ${i + 1}`,
-          color: typeof x.color === "string" ? x.color : COLORS[i % COLORS.length],
-          line: null,
-          marker: null
+        .slice(0,50)
+        .map((x,i)=>({
+          id:i+1,
+          lat:x.lat,
+          lng:x.lng,
+          name:`Hedef ${i+1}`,
+          color:COLORS[i%COLORS.length],
+          line:null,
+          marker:null
         }));
 
-      nextId = targets.reduce((m, x) => Math.max(m, x.id + 1), 1);
-      activeId = targets[0]?.id ?? null;
-    } catch (_) {}
+      nextId=targets.length+1;
+      activeId=targets[0]?.id??null;
+    } catch(_) {}
+  }
+
+  function renumberTargets(activeTargetRef=null) {
+    targets.forEach((t,i)=>{
+      t.id=i+1;
+      t.name=`Hedef ${i+1}`;
+      t.color=COLORS[i%COLORS.length];
+      if(t.marker) t.marker.setIcon(targetIcon(t.color));
+      if(t.line) t.line.setStyle({color:t.color});
+    });
+    nextId=targets.length+1;
+    if(activeTargetRef && targets.includes(activeTargetRef)) activeId=activeTargetRef.id;
+    else if(!targets.some(t=>t.id===activeId)) activeId=targets[0]?.id??null;
   }
 
   function saveTargets() {
@@ -318,6 +351,8 @@
       activeId = t.id;
       renderTargetsList();
       updateCompass();
+      updateHeadingMarker();
+      updateQiblaAlignment();
     };
 
     t.line.on("click", activate);
@@ -366,15 +401,16 @@
   }
 
   function addTarget(lat,lng) {
-    const id = nextId++;
-    const t = {
+    const id=targets.length+1;
+    const t={
       id,lat,lng,
       name:`Hedef ${id}`,
       color:COLORS[(id-1)%COLORS.length],
       line:null,marker:null
     };
     targets.push(t);
-    activeId=id;
+    renumberTargets(t);
+    activeId=t.id;
     createTargetLayers(t);
     saveTargets();
     renderTargetsList();
@@ -384,16 +420,22 @@
 
   function removeTarget(id) {
     const i=targets.findIndex(t=>t.id===id);
-    if (i<0) return;
+    if(i<0) return;
     const t=targets[i];
-    if (t.line) map.removeLayer(t.line);
-    if (t.marker) map.removeLayer(t.marker);
+    const wasActive=activeId===id;
+    if(t.line) map.removeLayer(t.line);
+    if(t.marker) map.removeLayer(t.marker);
     targets.splice(i,1);
-    if (activeId===id) activeId=targets[0]?.id??null;
+
+    const newActive=wasActive
+      ? (targets[Math.min(i,targets.length-1)]||targets[0]||null)
+      : (targets.find(x=>x.id===activeId)||null);
+
+    renumberTargets(newActive);
     saveTargets();
     renderTargetsList();
     updateCompass();
-    if (windOn) refreshWind();
+    if(windOn) refreshWind();
   }
 
   function clearTargets() {
@@ -403,6 +445,7 @@
     }
     targets=[];
     activeId=null;
+    nextId=1;
     saveTargets();
     renderTargetsList();
     updateCompass();
@@ -523,24 +566,14 @@
   function buildWindPoints() {
     const pts=[];
 
-    // Kullanıcının konumu yerine her zaman haritanın tam merkezini sorgula.
-    const center = map.getCenter();
-    pts.push({
-      lat:center.lat,
-      lng:center.lng,
-      kind:"center",
-      id:null
-    });
-
-    for (const t of targets) {
-      pts.push({
-        lat:t.lat,
-        lng:t.lng,
-        kind:"target",
-        id:t.id
-      });
+    if(centerWindOn){
+      const center=map.getCenter();
+      pts.push({lat:center.lat,lng:center.lng,kind:"center",id:null});
     }
 
+    for(const t of targets){
+      pts.push({lat:t.lat,lng:t.lng,kind:"target",id:t.id});
+    }
     return pts;
   }
 
@@ -599,26 +632,19 @@
     return map.containerPointToLatLng(endPoint);
   }
 
-  function makeWindArrowIcon(toDir, speed, big=false) {
-    const size = big ? 66 : 54;
-    const cls = big ? "wind-arrow location-wind-arrow" : "wind-arrow target-wind-arrow";
-    const speedCls = big ? "wind-speed location-wind-speed" : "wind-speed target-wind-speed";
-
+  function makeWindArrowIcon(toDir) {
+    const size=54;
     return L.divIcon({
       className:"wind-icon-wrap",
-      html:
-        `<div class="${cls}" style="transform:rotate(${toDir}deg)">`+
-          `<div class="${speedCls}" style="transform:translateX(-50%) rotate(${-toDir}deg)">`+
-            `${Math.round(speed)} km/sa`+
-          `</div>`+
-        `</div>`,
+      html:`<div class="wind-arrow target-wind-arrow" style="transform:rotate(${toDir}deg)"></div>`,
       iconSize:[size,size],
       iconAnchor:[size/2,size/2]
     });
   }
 
   function updateCenterWind(speed, fromDir) {
-    const toDir = normalize360(fromDir + 180);
+    if(!centerWindOn) return;
+    const toDir=normalize360(fromDir+180);
     const dir = directionText(toDir);
     const text = `${Math.round(speed)} km/sa · ${Math.round(toDir)}° ${dir}`;
 
@@ -636,8 +662,8 @@
 
   function clearCenterWindUI() {
     if (els.centerWind) els.centerWind.hidden = true;
-    if (els.centerWindTop) els.centerWindTop.textContent = "Rüzgâr kapalı";
-    if (els.centerWindBottom) els.centerWindBottom.textContent = "Rüzgâr kapalı";
+    if(els.centerWindTop) els.centerWindTop.textContent=centerWindOn?"Veri bekleniyor…":"Kapalı";
+    if(els.centerWindBottom) els.centerWindBottom.textContent=centerWindOn?"Veri bekleniyor…":"Kapalı";
   }
 
   function addTargetWindProjection(target, speed, fromDir) {
@@ -686,7 +712,7 @@
     );
 
     L.marker([arrowPos.lat,arrowPos.lng],{
-      icon:makeWindArrowIcon(toDir,speed,false),
+      icon:makeWindArrowIcon(toDir),
       interactive:false,
       keyboard:false,
       zIndexOffset:1500
@@ -702,8 +728,8 @@
 
     const pts=buildWindPoints();
 
-    if (!pts.length) {
-      els.windStatus.textContent="konum/hedef yok";
+    if(!pts.length){
+      els.windStatus.textContent="aktif · hedef yok";
       return;
     }
 
@@ -780,6 +806,158 @@
       els.windStatus.textContent="kapalı";
     }
     setTimeout(syncMobileControls,0);
+  }
+
+
+  function setCenterWindEnabled(enabled){
+    centerWindOn=!!enabled;
+    els.centerWindToggleBtn.classList.toggle("is-active",centerWindOn);
+    els.centerWindToggleBtn.querySelector("span:last-child").textContent=
+      centerWindOn?"Merkez Rüzgârını Kapat":"Merkez Rüzgârını Aç";
+    if(!centerWindOn) clearCenterWindUI();
+    else if(windOn) refreshWind();
+    syncMobileControls();
+  }
+
+  function headingIcon(heading){
+    return L.divIcon({
+      className:"heading-marker-wrap",
+      html:`<div class="heading-arrow-marker" style="transform:rotate(${heading}deg)"></div>`,
+      iconSize:[52,52],iconAnchor:[26,26]
+    });
+  }
+
+  function updateHeadingMarker(){
+    if(!map) return;
+    if(!headingArrowOn||!currentPosition||deviceHeading==null){
+      if(headingMarker){map.removeLayer(headingMarker);headingMarker=null;}
+      updateQiblaAlignment();
+      return;
+    }
+    const ll=[currentPosition.lat,currentPosition.lng];
+    const icon=headingIcon(deviceHeading);
+    if(!headingMarker){
+      headingMarker=L.marker(ll,{icon,interactive:false,keyboard:false,zIndexOffset:1900}).addTo(map);
+    }else{
+      headingMarker.setLatLng(ll);
+      headingMarker.setIcon(icon);
+    }
+    updateQiblaAlignment();
+  }
+
+  async function setHeadingArrowEnabled(enabled){
+    headingArrowOn=!!enabled;
+    els.headingArrowBtn.classList.toggle("is-active",headingArrowOn);
+    els.headingArrowBtn.querySelector("span:last-child").textContent=
+      headingArrowOn?"Bakış Okunu Kapat":"Bakış Okunu Aç";
+    if(headingArrowOn&&deviceHeading==null) await enableOrientation();
+    updateHeadingMarker();
+    syncMobileControls();
+  }
+
+  function greatCirclePoints(a,b,segments=72){
+    const toVec=p=>{
+      const lat=p.lat*Math.PI/180,lng=p.lng*Math.PI/180;
+      return [Math.cos(lat)*Math.cos(lng),Math.cos(lat)*Math.sin(lng),Math.sin(lat)];
+    };
+    const av=toVec(a),bv=toVec(b);
+    let dot=Math.max(-1,Math.min(1,av[0]*bv[0]+av[1]*bv[1]+av[2]*bv[2]));
+    const omega=Math.acos(dot);
+    if(omega<1e-9) return [[a.lat,a.lng],[b.lat,b.lng]];
+    const so=Math.sin(omega),pts=[];
+    for(let i=0;i<=segments;i++){
+      const t=i/segments;
+      const s1=Math.sin((1-t)*omega)/so,s2=Math.sin(t*omega)/so;
+      const x=s1*av[0]+s2*bv[0],y=s1*av[1]+s2*bv[1],z=s1*av[2]+s2*bv[2];
+      pts.push([
+        Math.atan2(z,Math.sqrt(x*x+y*y))*180/Math.PI,
+        Math.atan2(y,x)*180/Math.PI
+      ]);
+    }
+    return pts;
+  }
+
+  function kaabaIcon(){
+    return L.divIcon({
+      className:"qibla-marker-wrap",
+      html:'<div class="kaaba-marker">K</div>',
+      iconSize:[24,24],iconAnchor:[12,12]
+    });
+  }
+
+  function updateQiblaLayer(){
+    if(!map) return;
+    if(!qiblaOn||!currentPosition){
+      if(qiblaLayer){map.removeLayer(qiblaLayer);qiblaLayer=null;}
+      if(qiblaKaabaMarker){map.removeLayer(qiblaKaabaMarker);qiblaKaabaMarker=null;}
+      updateQiblaAlignment();
+      return;
+    }
+
+    const pts=greatCirclePoints(currentPosition,KAABA);
+    if(!qiblaLayer){
+      qiblaLayer=L.polyline(pts,{
+        color:"#e3bc59",weight:3,opacity:.95,dashArray:"8 8",lineCap:"round",interactive:false
+      }).addTo(map);
+    }else qiblaLayer.setLatLngs(pts);
+
+    const qb=bearingDegrees(currentPosition,KAABA);
+    qiblaLayer.bindTooltip(`Kıble ${Math.round(qb)}° ${directionText(qb)}`,{
+      permanent:false,direction:"top",className:"qibla-leaflet-label"
+    });
+
+    if(!qiblaKaabaMarker){
+      qiblaKaabaMarker=L.marker([KAABA.lat,KAABA.lng],{
+        icon:kaabaIcon(),interactive:false,keyboard:false
+      }).addTo(map);
+    }
+    updateQiblaAlignment();
+  }
+
+  function angularDifference(a,b){
+    return Math.abs(((a-b+540)%360)-180);
+  }
+
+  function updateQiblaAlignment(){
+    const aligned=qiblaOn&&headingArrowOn&&currentPosition&&deviceHeading!=null
+      && angularDifference(deviceHeading,bearingDegrees(currentPosition,KAABA))<=QIBLA_ALIGN_TOLERANCE;
+
+    if(els.qiblaAligned) els.qiblaAligned.hidden=!aligned;
+
+    if(aligned&&currentPosition){
+      const icon=L.divIcon({
+        className:"qibla-align-marker-wrap",
+        html:'<div class="qibla-align-marker">✓</div>',
+        iconSize:[34,34],iconAnchor:[17,17]
+      });
+      if(!qiblaAlignMarker){
+        qiblaAlignMarker=L.marker([currentPosition.lat,currentPosition.lng],{
+          icon,interactive:false,keyboard:false,zIndexOffset:2200
+        }).addTo(map);
+      }else{
+        qiblaAlignMarker.setLatLng([currentPosition.lat,currentPosition.lng]);
+        qiblaAlignMarker.setIcon(icon);
+      }
+    }else if(qiblaAlignMarker){
+      map.removeLayer(qiblaAlignMarker);
+      qiblaAlignMarker=null;
+    }
+  }
+
+  async function setQiblaEnabled(enabled){
+    qiblaOn=!!enabled;
+    els.qiblaBtn.classList.toggle("is-active",qiblaOn);
+    els.qiblaBtn.querySelector("span:last-child").textContent=qiblaOn?"Kıbleyi Kapat":"Kıbleyi Aç";
+
+    if(qiblaOn){
+      // Kıble açılırsa bakış oku da otomatik açılsın.
+      await setHeadingArrowEnabled(true);
+      updateQiblaLayer();
+    }else{
+      updateQiblaLayer();
+      // Bakış oku kullanıcının açık tuttuğu bağımsız ayar olarak kalabilir.
+    }
+    syncMobileControls();
   }
 
   function normalize360(d){return ((d%360)+360)%360;}
@@ -909,8 +1087,12 @@
     if (els.mobileWindBtn) els.mobileWindBtn.classList.toggle("is-active", windOn);
     if (els.mobileSatelliteBtn) els.mobileSatelliteBtn.classList.toggle("is-active", satelliteOn);
     if (els.mobileFollowToggle) els.mobileFollowToggle.checked=els.followToggle.checked;
-    if (els.mobileWindStatus) els.mobileWindStatus.textContent=els.windStatus.textContent;
-    if (els.mobileLocationStatus) els.mobileLocationStatus.textContent=els.locationStatus.textContent;
+    if(els.mobileWindStatus) els.mobileWindStatus.textContent=els.windStatus.textContent;
+    if(els.mobileLocationStatus) els.mobileLocationStatus.textContent=els.locationStatus.textContent;
+    if(els.mobileQiblaBtn) els.mobileQiblaBtn.classList.toggle("is-active",qiblaOn);
+    if(els.drawerQiblaBtn) els.drawerQiblaBtn.classList.toggle("is-active",qiblaOn);
+    if(els.drawerHeadingBtn) els.drawerHeadingBtn.classList.toggle("is-active",headingArrowOn);
+    if(els.drawerCenterWindBtn) els.drawerCenterWindBtn.classList.toggle("is-active",centerWindOn);
   }
 
   els.orientationBtn.addEventListener("click",enableOrientation);
@@ -940,10 +1122,7 @@
   if (els.mobileWindBtn) els.mobileWindBtn.addEventListener("click",()=>{ toggleWind(); syncMobileControls(); });
   if (els.mobileSatelliteBtn) els.mobileSatelliteBtn.addEventListener("click",()=>{ toggleSatellite(); syncMobileControls(); });
   if (els.mobileRecenterBtn) els.mobileRecenterBtn.addEventListener("click",()=>els.recenterBtn.click());
-  if (els.mobileTargetsBtn) els.mobileTargetsBtn.addEventListener("click",()=>{
-    const first=els.targets?.querySelector(".target-row");
-    if(first) first.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
-  });
+  if(els.mobileQiblaBtn) els.mobileQiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); });
   if (els.mobileMenuBtn) els.mobileMenuBtn.addEventListener("click",openMobileDrawer);
   if (els.mobileDrawerClose) els.mobileDrawerClose.addEventListener("click",closeMobileDrawer);
   if (els.mobileDrawerBackdrop) els.mobileDrawerBackdrop.addEventListener("click",closeMobileDrawer);
@@ -969,7 +1148,24 @@
   // Durum bilgilerini mobil çekmeceye periyodik yansıt.
   setInterval(syncMobileControls,1000);
 
+
+  els.qiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); });
+  els.headingArrowBtn.addEventListener("click",async()=>{ await setHeadingArrowEnabled(!headingArrowOn); });
+  els.centerWindToggleBtn.addEventListener("click",()=>setCenterWindEnabled(!centerWindOn));
+
+  if(els.drawerQiblaBtn) els.drawerQiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); closeMobileDrawer(); });
+  if(els.drawerHeadingBtn) els.drawerHeadingBtn.addEventListener("click",async()=>{ await setHeadingArrowEnabled(!headingArrowOn); });
+  if(els.drawerCenterWindBtn) els.drawerCenterWindBtn.addEventListener("click",()=>setCenterWindEnabled(!centerWindOn));
+
   loadTargets();
+  // Varsayılanlar:
+  // Rüzgâr açık, merkez rüzgâr kapalı, bakış oku kapalı, kıble kapalı.
+  els.windBtn.querySelector("span:last-child").textContent="Rüzgârı Kapat";
+  els.windBtn.classList.add("is-active");
+  els.windLegend.hidden=false;
+  setCenterWindEnabled(false);
+  setTimeout(()=>{ if(windOn){ refreshWind(); startWindInterval(); } },500);
+
   initMap();
 
   window.addEventListener("beforeunload",()=>{

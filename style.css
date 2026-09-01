@@ -571,3 +571,63 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
     flex-basis:170px;
   }
 }
+
+
+/* ===== Kıble / bakış yönü / merkez rüzgâr ===== */
+#qiblaBtn.is-active,#headingArrowBtn.is-active,#centerWindToggleBtn.is-active{
+  border-color:rgba(84,223,131,.42);
+  background:rgba(84,223,131,.08);
+}
+#qiblaBtn.is-active .control-icon{color:#76ef98;background:rgba(84,223,131,.10)}
+
+.heading-marker-wrap,.qibla-marker-wrap,.qibla-align-marker-wrap{
+  background:transparent!important;border:0!important
+}
+.heading-arrow-marker{
+  width:52px;height:52px;position:relative;transform-origin:50% 50%;pointer-events:none
+}
+.heading-arrow-marker:before{
+  content:"";position:absolute;left:23px;top:5px;width:6px;height:34px;border-radius:999px;
+  background:#38aaff;box-shadow:0 0 0 2px #fff,0 4px 12px rgba(0,0,0,.4)
+}
+.heading-arrow-marker:after{
+  content:"";position:absolute;left:16px;top:4px;width:14px;height:14px;
+  border-top:6px solid #38aaff;border-right:6px solid #38aaff;
+  transform:rotate(-45deg);filter:drop-shadow(0 0 1px #fff)
+}
+.kaaba-marker{
+  width:24px;height:24px;border-radius:6px;background:#111;border:3px solid #e3bc59;
+  box-shadow:0 0 0 2px rgba(255,255,255,.9),0 4px 14px rgba(0,0,0,.35);
+  display:grid;place-items:center;color:#e3bc59;font-size:10px;font-weight:900
+}
+.qibla-aligned{
+  position:absolute;left:50%;top:76px;transform:translateX(-50%);z-index:1250;
+  display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;
+  background:rgba(14,54,31,.92);border:1px solid rgba(84,223,131,.55);color:#dcffe7;
+  box-shadow:0 8px 26px rgba(0,0,0,.28);backdrop-filter:blur(10px);pointer-events:none
+}
+.qibla-aligned span{
+  width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  background:#54df83;color:#092413;font-weight:1000
+}
+.qibla-aligned strong{font-size:10px}
+.qibla-align-marker{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#54df83;
+  border:4px solid #fff;color:#092413;font-size:18px;font-weight:1000;
+  box-shadow:0 0 0 5px rgba(84,223,131,.25),0 5px 16px rgba(0,0,0,.35)
+}
+.qibla-leaflet-label{
+  background:rgba(9,20,29,.9)!important;border:1px solid rgba(227,188,89,.45)!important;
+  color:#ffe49c!important;box-shadow:0 5px 18px rgba(0,0,0,.25)!important;
+  font-size:10px!important;font-weight:800!important
+}
+.qibla-leaflet-label:before{border-right-color:rgba(227,188,89,.45)!important}
+
+@media(max-width:760px){
+  .qibla-aligned{top:52px;padding:6px 9px}
+  .qibla-aligned span{width:20px;height:20px;font-size:12px}
+  .qibla-aligned strong{font-size:9px}
+  .heading-arrow-marker{width:44px;height:44px}
+  .heading-arrow-marker:before{left:19px;top:5px;height:29px}
+  .heading-arrow-marker:after{left:12px;top:4px}
+}
