@@ -647,6 +647,7 @@
         b.className="search-result";
         b.innerHTML=`<strong>${escapeHtml(name)}</strong><small>${escapeHtml(full)}</small>`;
         b.addEventListener("click",()=>{
+          clearMosqueResults();
           els.placeSearchResults.hidden=true;
           els.placeSearchInput.value=name;
           map.setView([lat,lng],17);
@@ -668,14 +669,23 @@
     }
   }
 
+  function clearMosqueResults(){
+    if(mosqueMarkersLayer){
+      map.removeLayer(mosqueMarkersLayer);
+      mosqueMarkersLayer=null;
+    }
+    if(els.mosqueResults) els.mosqueResults.innerHTML="";
+    selectedMosque=null;
+  }
+
   async function findNearbyMosques(){
     if(!currentPosition){
       alert("En yakın camileri bulmak için önce konum alınmalı.");
       return;
     }
 
-    els.mosqueChooser.hidden=false;
-    els.mosqueResults.innerHTML='<div class="search-empty">Yakındaki camiler aranıyor…</div>';
+    // Her yeni aramada eski bulunan camileri temizle.
+    clearMosqueResults();
 
     try{
       const {lat,lng}=currentPosition;
@@ -685,53 +695,75 @@
           nwr["building"="mosque"](around:7000,${lat},${lng});
         );
         out center tags;`;
-      const url=`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-      const res=await fetch(url);
-      if(!res.ok) throw new Error("overpass");
-      const json=await res.json();
+      const endpoints=[
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.nchc.org.tw/api/interpreter"
+      ];
+
+      let json=null;
+      for(const endpoint of endpoints){
+        try{
+          const res=await fetch(`${endpoint}?data=${encodeURIComponent(query)}`);
+          if(res.ok){
+            json=await res.json();
+            break;
+          }
+        }catch(_){}
+      }
+      if(!json) throw new Error("overpass");
 
       const list=(json.elements||[]).map(el=>{
-        const p=el.type==="node" ? {lat:el.lat,lng:el.lon} : {lat:el.center?.lat,lng:el.center?.lon};
+        const p=el.type==="node"
+          ? {lat:el.lat,lng:el.lon}
+          : {lat:el.center?.lat,lng:el.center?.lon};
         if(!Number.isFinite(p.lat)||!Number.isFinite(p.lng)) return null;
-        const name=el.tags?.name || el.tags?.["name:tr"] || "İsimsiz Cami";
+        const name=el.tags?.name || el.tags?.["name:tr"] || "Cami";
         const dist=distanceMeters(currentPosition,p);
         return {lat:p.lat,lng:p.lng,name,dist};
       }).filter(Boolean)
         .sort((a,b)=>a.dist-b.dist)
         .filter((m,i,a)=>i===a.findIndex(x=>Math.abs(x.lat-m.lat)<0.00003&&Math.abs(x.lng-m.lng)<0.00003))
-        .slice(0,8);
+        .slice(0,12);
 
       if(!list.length){
-        els.mosqueResults.innerHTML='<div class="search-empty">Yakında kayıtlı cami bulunamadı.</div>';
+        alert("Yakında kayıtlı cami bulunamadı.");
         return;
       }
 
-      if(mosqueMarkersLayer) map.removeLayer(mosqueMarkersLayer);
       mosqueMarkersLayer=L.layerGroup().addTo(map);
+      const bounds=[];
 
-      els.mosqueResults.innerHTML="";
-      list.forEach((m,i)=>{
-        const marker=L.marker([m.lat,m.lng]).addTo(mosqueMarkersLayer);
-        marker.bindTooltip(m.name,{direction:"top"});
+      list.forEach(m=>{
+        const marker=L.marker([m.lat,m.lng],{zIndexOffset:1200}).addTo(mosqueMarkersLayer);
+
+        // İsim sürekli görünür.
+        marker.bindTooltip(m.name,{
+          permanent:true,
+          direction:"top",
+          offset:[0,-10],
+          className:"mosque-name-label",
+          opacity:1
+        });
+
+        // Haritadaki camiye tıklayınca doğrudan yol tarifi.
         marker.on("click",()=>{
-          els.mosqueChooser.hidden=true;
           selectedMosque=m;
           buildRoute(m,true);
         });
 
-        const btn=document.createElement("button");
-        btn.type="button";
-        btn.className="mosque-result";
-        btn.innerHTML=`<span><strong>${escapeHtml(m.name)}</strong><small>${i===0?"En yakın cami":"Yakındaki cami"}</small></span><em>${formatDistance(m.dist)}</em>`;
-        btn.addEventListener("click",()=>{
-          els.mosqueChooser.hidden=true;
-          selectedMosque=m;
-          buildRoute(m,true);
-        });
-        els.mosqueResults.appendChild(btn);
+        bounds.push([m.lat,m.lng]);
       });
+
+      // Sonuçları doğrudan haritada göstermek için uygun kadraj.
+      if(bounds.length){
+        const groupBounds=L.latLngBounds(bounds);
+        if(groupBounds.isValid()){
+          map.fitBounds(groupBounds,{padding:[55,55],maxZoom:16});
+        }
+      }
     }catch(_){
-      els.mosqueResults.innerHTML='<div class="search-empty">Cami arama servisine ulaşılamadı.</div>';
+      alert("Cami arama servisine ulaşılamadı.");
     }
   }
 
@@ -747,6 +779,7 @@
     routeTargetId=null;
     selectedMosque=null;
     routeData=null;
+    clearMosqueResults();
     els.routePanel.hidden=true;
     els.navigationBtn.classList.remove("is-active");
     els.navigationBtn.textContent="Navigasyona Dön";
@@ -1598,7 +1631,11 @@
     }
   });
 
-  if(els.placeSearchForm)els.placeSearchForm.addEventListener("submit",e=>{e.preventDefault();searchPlaces(els.placeSearchInput.value);});
+  if(els.placeSearchForm)els.placeSearchForm.addEventListener("submit",e=>{
+    e.preventDefault();
+    clearMosqueResults();
+    searchPlaces(els.placeSearchInput.value);
+  });
   if(els.placeSearchInput)els.placeSearchInput.addEventListener("input",()=>{if(!els.placeSearchInput.value.trim())els.placeSearchResults.hidden=true;});
   document.addEventListener("click",e=>{if(!e.target.closest(".place-search")&&els.placeSearchResults)els.placeSearchResults.hidden=true;});
   if(els.closeRouteBtn)els.closeRouteBtn.addEventListener("click",clearRoute);

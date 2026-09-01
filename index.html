@@ -160,12 +160,9 @@
           <span>☪</span><b>En Yakın Camiyi Bul</b>
         </button>
 
-        <div id="mosqueChooser" class="mosque-chooser" hidden>
-          <div class="mosque-chooser-head">
-            <div><small>YAKIN CAMİLER</small><strong>Gitmek istediğin camiyi seç</strong></div>
-            <button id="closeMosqueChooser" type="button">×</button>
-          </div>
-          <div id="mosqueResults" class="mosque-results"></div>
+        <div id="mosqueChooser" class="mosque-chooser" hidden aria-hidden="true">
+          <button id="closeMosqueChooser" type="button" hidden>×</button>
+          <div id="mosqueResults" hidden></div>
         </div>
 
         <div id="routePanel" class="route-panel" hidden>
@@ -203,7 +200,7 @@
 
         <div id="duaPrompt" class="dua-prompt" hidden>
           <button id="duaBtn" class="dua-btn" type="button">Bir duanızı alırız</button>
-          <div class="dua-click-hand" aria-hidden="true">☝</div>
+          <div class="dua-click-hand" aria-hidden="true">👆</div>
         </div>
         <div id="duaModal" class="dua-modal" hidden>
           <div class="dua-card">

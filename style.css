@@ -980,3 +980,102 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
     width:calc(100vw - 74px)!important
   }
 }
+
+
+/* ===== v9: arama oranları, sürekli cami isimleri, dua parmağı ===== */
+
+/* Arama açıldığında textbox uzun, Ara düğmesi kısa */
+.place-search.compact.expanded{
+  width:min(620px,calc(100% - 260px))!important;
+}
+.place-search.compact.expanded form{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 66px!important;
+  gap:6px!important;
+}
+.place-search.compact.expanded form input{
+  width:100%!important;
+  min-width:0!important;
+  height:40px!important;
+  padding:0 12px!important;
+  font-size:12px!important;
+}
+.place-search.compact.expanded form button[type="submit"]{
+  width:66px!important;
+  min-width:66px!important;
+  padding:0!important;
+}
+
+/* Cami seçim listesi kullanılmıyor */
+.mosque-chooser{display:none!important}
+
+/* Kalıcı cami isim etiketi */
+.mosque-name-label{
+  background:rgba(8,18,27,.92)!important;
+  color:#fff!important;
+  border:1px solid rgba(227,188,89,.42)!important;
+  border-radius:8px!important;
+  padding:4px 7px!important;
+  box-shadow:0 5px 14px rgba(0,0,0,.28)!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+.mosque-name-label:before{
+  border-top-color:rgba(8,18,27,.92)!important;
+}
+
+/* Dua parmağı butonun ÜZERİNDE, basıyormuş gibi */
+.dua-click-hand{
+  left:50%!important;
+  right:auto!important;
+  top:50%!important;
+  font-size:26px!important;
+  line-height:1!important;
+  transform-origin:50% 85%!important;
+  animation:duaPressV9 1.7s ease-in-out infinite!important;
+  pointer-events:none!important;
+  z-index:3!important;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+}
+@keyframes duaPressV9{
+  0%,100%{
+    transform:translate(-50%,-58%) scale(1);
+    opacity:.55
+  }
+  35%{
+    transform:translate(-50%,-46%) scale(1);
+    opacity:1
+  }
+  50%{
+    transform:translate(-50%,-39%) scale(.90);
+    opacity:1
+  }
+  64%{
+    transform:translate(-50%,-47%) scale(1);
+    opacity:.95
+  }
+}
+.dua-prompt .dua-btn{
+  position:relative;
+  z-index:2;
+}
+
+@media(max-width:760px){
+  .place-search.compact.expanded{
+    left:8px!important;
+    right:8px!important;
+    width:auto!important;
+  }
+  .place-search.compact.expanded form{
+    grid-template-columns:minmax(0,1fr) 58px!important;
+  }
+  .place-search.compact.expanded form button[type="submit"]{
+    width:58px!important;
+    min-width:58px!important;
+  }
+  .place-search.compact.expanded form input{
+    font-size:16px!important; /* iOS zoom engelle */
+  }
+}

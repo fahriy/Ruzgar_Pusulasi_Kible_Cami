@@ -105,3 +105,12 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Arama simgesine basınca gerçek arama textbox'ı açılır, tekrar basınca kapanır.
 - GPS takibi uygulama açıldığında varsayılan kapalıdır.
 - Dua düğmesindeki parmak, düğmenin üstünden aşağı doğru gelip gerçek dokunma hareketi yapar.
+
+
+## v9
+- Arama açıldığında metin kutusu geniş, **Ara** düğmesi kısa olacak şekilde oranlar düzeltildi.
+- En yakın camiler artık ayrı bir listede gösterilmez; doğrudan harita üzerinde görünür.
+- Cami isimleri haritada sürekli açık etiket olarak görünür; hover gerektirmez.
+- Haritadaki cami pinine dokununca doğrudan o caminin yol tarifi açılır.
+- Yeni bir cami/yer araması yapıldığında önceki cami sonuçları temizlenir.
+- Dua düğmesindeki parmak butonun tam üzerinde aşağı-yukarı basma hareketi yapar.
