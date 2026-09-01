@@ -68,3 +68,14 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Açılıp kapanan ayarların tamamı GPS takibiyle aynı switch biçimine çevrildi.
 - Mobil ayar çekmecesindeki aç/kapa seçenekleri de switch biçimindedir.
 - Sol üstteki harita merkezi rüzgâr bilgi kartı, harita zoom düğmelerinin üstüne taşındı.
+
+
+## v5
+- Haritaya normal dokunma hedef eklemez; önce **Hedef Ekle** modu açılmalıdır.
+- Yer/adres/işletme araması eklendi (OpenStreetMap Nominatim).
+- Her hedefte **Yol** düğmesi vardır; araç rotası oluşturur.
+- Rota panelinde kalan mesafe ve tahmini süre görünür.
+- Navigasyon modu GPS konumunu takip eder ve hareket oldukça rotayı periyodik yeniler.
+- Kıble açılınca **Bir duanızı alırız** düğmesi görünür.
+- Dua düğmesinde Alibey Yıldırım, Sıtkiye Yıldırım ve Fatma Yıldırım ruhlarına Fâtiha metni gösterilir.
+- Harita güncel OpenStreetMap yol/veri altyapısını kullanır.

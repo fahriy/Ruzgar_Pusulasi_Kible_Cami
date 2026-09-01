@@ -28,6 +28,13 @@
   let qiblaOn = false;
   let targetAddMode = false;
   let orientationListening = false;
+  let searchMarker = null;
+  let routeLayer = null;
+  let routeTargetId = null;
+  let routeData = null;
+  let navigationOn = false;
+  let lastRouteRefreshAt = 0;
+  let lastRouteRefreshPos = null;
   let windLayer = null;
   let windAbort = null;
   let windTimer = null;
@@ -98,7 +105,20 @@
     addTargetModeBtn: $("addTargetModeBtn"),
     drawerAddTargetBtn: $("drawerAddTargetBtn"),
     targetAddBanner: $("targetAddBanner"),
-    cancelTargetAddBtn: $("cancelTargetAddBtn")
+    cancelTargetAddBtn: $("cancelTargetAddBtn"),
+    placeSearchForm: $("placeSearchForm"),
+    placeSearchInput: $("placeSearchInput"),
+    placeSearchResults: $("placeSearchResults"),
+    routePanel: $("routePanel"),
+    routeTargetName: $("routeTargetName"),
+    routeDistance: $("routeDistance"),
+    routeDuration: $("routeDuration"),
+    routeInstruction: $("routeInstruction"),
+    navigationBtn: $("navigationBtn"),
+    closeRouteBtn: $("closeRouteBtn"),
+    duaBtn: $("duaBtn"),
+    duaModal: $("duaModal"),
+    duaCloseBtn: $("duaCloseBtn")
   };
 
   function initMap() {
@@ -130,8 +150,10 @@
     osmLayer.addTo(map);
     activeBaseLayer = osmLayer;
 
-    map.on("click", e => {
-      if (!manualLocation) addTarget(e.latlng.lat, e.latlng.lng);
+    map.on("click",e=>{
+      if(manualLocation || !targetAddMode) return;
+      addTarget(e.latlng.lat,e.latlng.lng);
+      setTargetAddMode(false);
     });
 
     map.on("moveend zoomend", () => {
@@ -222,8 +244,20 @@
           renderTargetsList();
           updateCompass();
           if (windOn) scheduleWindRefresh();
+          if(qiblaOn) updateQiblaLayer();
+          updateHeadingMarker();
+          if(navigationOn && routeTargetId){
+            const now=Date.now();
+            const moved=!lastRouteRefreshPos || distanceMeters(lastRouteRefreshPos,currentPosition)>35;
+            if(moved && now-lastRouteRefreshAt>12000){
+              lastRouteRefreshAt=now;
+              lastRouteRefreshPos={lat:currentPosition.lat,lng:currentPosition.lng};
+              buildRoute(routeTargetId,false);
+            }
+            map.setView([currentPosition.lat,currentPosition.lng],Math.max(map.getZoom(),17),{animate:true});
+          }
 
-          if (els.followToggle.checked) {
+          if (els.followToggle.checked && !navigationOn) {
             map.panTo([currentPosition.lat, currentPosition.lng]);
           }
         } else {
@@ -430,7 +464,8 @@
     saveTargets();
     renderTargetsList();
     updateCompass();
-    if (windOn) refreshWind();
+    if(windOn) refreshWind();
+    setTargetAddMode(false);
   }
 
   function removeTarget(id) {
@@ -438,6 +473,7 @@
     if(i<0) return;
     const t=targets[i];
     const wasActive=activeId===id;
+    if(routeTargetId===id) clearRoute();
     if(t.line) map.removeLayer(t.line);
     if(t.marker) map.removeLayer(t.marker);
     targets.splice(i,1);
@@ -505,16 +541,31 @@
         map.panTo([t.lat,t.lng]);
       });
 
+      const routeBtn=document.createElement("button");
+      routeBtn.type="button";
+      routeBtn.className="route-action";
+      routeBtn.textContent="Yol";
+      routeBtn.title="Yol tarifi";
+      routeBtn.addEventListener("click",e=>{e.stopPropagation();activeId=t.id;renderTargetsList();buildRoute(t.id,true);});
+
       const del=document.createElement("button");
       del.type="button";
       del.className="delete-btn";
       del.textContent="×";
       del.addEventListener("click",()=>removeTarget(t.id));
 
-      row.append(dot,main,del);
+      row.append(dot,main,routeBtn,del);
       els.targets.appendChild(row);
     }
   }
+
+
+  function formatDuration(seconds){if(!Number.isFinite(seconds))return "—";const min=Math.max(1,Math.round(seconds/60));if(min<60)return `${min} dk`;const h=Math.floor(min/60),m=min%60;return m?`${h} sa ${m} dk`:`${h} sa`;}
+  async function searchPlaces(query){const q=(query||"").trim();if(q.length<2)return;els.placeSearchResults.hidden=false;els.placeSearchResults.innerHTML='<div class="search-empty">Aranıyor…</div>';try{const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=tr&q=${encodeURIComponent(q)}`;const res=await fetch(url,{headers:{"Accept":"application/json"}});if(!res.ok)throw new Error("search");const data=await res.json();if(!Array.isArray(data)||!data.length){els.placeSearchResults.innerHTML='<div class="search-empty">Sonuç bulunamadı.</div>';return;}els.placeSearchResults.innerHTML="";data.forEach(item=>{const lat=Number(item.lat),lng=Number(item.lon);if(!Number.isFinite(lat)||!Number.isFinite(lng))return;const name=item?.name||item?.display_name?.split(",")[0]||"Sonuç",full=item?.display_name||name;const b=document.createElement("button");b.type="button";b.className="search-result";b.innerHTML=`<strong>${escapeHtml(name)}</strong><small>${escapeHtml(full)}</small>`;b.addEventListener("click",()=>{els.placeSearchResults.hidden=true;els.placeSearchInput.value=name;map.setView([lat,lng],17);if(searchMarker)map.removeLayer(searchMarker);searchMarker=L.marker([lat,lng],{icon:L.divIcon({className:"",html:'<div class="search-pin">⌕</div>',iconSize:[32,32],iconAnchor:[16,16]}),zIndexOffset:1300}).addTo(map);searchMarker.bindTooltip(name,{direction:"top"}).openTooltip();});els.placeSearchResults.appendChild(b);});}catch(_){els.placeSearchResults.innerHTML='<div class="search-empty">Arama servisine ulaşılamadı.</div>';}}
+  function clearRoute(){navigationOn=false;document.body.classList.remove("navigation-mode");if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}routeTargetId=null;routeData=null;els.routePanel.hidden=true;els.navigationBtn.classList.remove("is-active");els.navigationBtn.textContent="Navigasyonu Başlat";}
+  function routeInstructionText(route){const step=route?.legs?.[0]?.steps?.find(s=>Number(s.distance)>5)||route?.legs?.[0]?.steps?.[0];if(!step)return "Rotayı takip edin.";const name=step.name?` · ${step.name}`:"";const type=step.maneuver?.type||"",modifier=step.maneuver?.modifier||"";const phrases={"depart":"Yola çıkın","arrive":"Hedefe ulaştınız","turn-left":"Sola dönün","turn-right":"Sağa dönün","turn-slight left":"Hafif sola yönelin","turn-slight right":"Hafif sağa yönelin","continue-straight":"Düz devam edin"};let key=type;if(type==="turn")key=`turn-${modifier}`;if(type==="continue")key=`continue-${modifier}`;return `${phrases[key]||"Rotayı takip edin"}${name}`;}
+  async function buildRoute(targetId,fit=true){const t=targets.find(x=>x.id===targetId);if(!t||!currentPosition){alert("Yol tarifi için önce konum alınmalı.");return;}routeTargetId=t.id;els.routePanel.hidden=false;els.routeTargetName.textContent=t.name;els.routeDistance.textContent="…";els.routeDuration.textContent="…";els.routeInstruction.textContent="Rota hazırlanıyor…";try{const coords=`${currentPosition.lng},${currentPosition.lat};${t.lng},${t.lat}`;const url=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`;const res=await fetch(url);if(!res.ok)throw new Error("route");const json=await res.json();const route=json?.routes?.[0];if(!route?.geometry?.coordinates)throw new Error("no-route");routeData=route;const latlngs=route.geometry.coordinates.map(c=>[c[1],c[0]]);if(routeLayer)map.removeLayer(routeLayer);routeLayer=L.polyline(latlngs,{color:"#46a9ff",weight:6,opacity:.9,lineCap:"round",lineJoin:"round"}).addTo(map);routeLayer.bringToFront();els.routeDistance.textContent=formatDistance(route.distance);els.routeDuration.textContent=formatDuration(route.duration);els.routeInstruction.textContent=routeInstructionText(route);if(fit&&!navigationOn)map.fitBounds(routeLayer.getBounds(),{padding:[45,45]});}catch(_){els.routeDistance.textContent="—";els.routeDuration.textContent="—";els.routeInstruction.textContent="Bu hedef için sürüş rotası alınamadı.";}}
+  function toggleNavigation(){if(!routeTargetId)return;navigationOn=!navigationOn;document.body.classList.toggle("navigation-mode",navigationOn);els.navigationBtn.classList.toggle("is-active",navigationOn);els.navigationBtn.textContent=navigationOn?"Navigasyonu Bitir":"Navigasyonu Başlat";if(navigationOn){els.followToggle.checked=false;if(els.mobileFollowToggle)els.mobileFollowToggle.checked=false;if(currentPosition)map.setView([currentPosition.lat,currentPosition.lng],18);buildRoute(routeTargetId,false);}setTimeout(()=>map.invalidateSize(true),100);}
 
   function setManualMode(enable) {
     manualLocation=enable;
@@ -951,6 +1002,8 @@
     if(els.qiblaToggle) els.qiblaToggle.checked=qiblaOn;
     if(els.drawerQiblaToggle) els.drawerQiblaToggle.checked=qiblaOn;
 
+    if(els.duaBtn) els.duaBtn.hidden=!qiblaOn;
+
     if(qiblaOn){
       // Kıble açılırsa bakış oku da otomatik açılsın.
       await setHeadingArrowEnabled(true);
@@ -1155,12 +1208,8 @@
   if (els.mobileMenuBtn) els.mobileMenuBtn.addEventListener("click",openMobileDrawer);
   if (els.mobileDrawerClose) els.mobileDrawerClose.addEventListener("click",closeMobileDrawer);
   if (els.mobileDrawerBackdrop) els.mobileDrawerBackdrop.addEventListener("click",closeMobileDrawer);
-
-  if (els.drawerWindBtn) els.drawerWindBtn.addEventListener("click",()=>{ toggleWind(); syncMobileControls(); });
-  if (els.drawerSatelliteBtn) els.drawerSatelliteBtn.addEventListener("click",()=>{ toggleSatellite(); syncMobileControls(); });
   if (els.drawerRecenterBtn) els.drawerRecenterBtn.addEventListener("click",()=>{ els.recenterBtn.click(); closeMobileDrawer(); });
   if (els.drawerManualBtn) els.drawerManualBtn.addEventListener("click",()=>{ setManualMode(true); closeMobileDrawer(); });
-  if (els.drawerCompassBtn) els.drawerCompassBtn.addEventListener("click",()=>{ enableOrientation(); closeMobileDrawer(); });
 
   if (els.mobileFollowToggle) {
     els.mobileFollowToggle.addEventListener("change",()=>{
@@ -1244,6 +1293,16 @@
   if(els.drawerCenterWindToggle) els.drawerCenterWindToggle.addEventListener("change",()=>{
     setCenterWindEnabled(els.drawerCenterWindToggle.checked);
   });
+
+
+  if(els.placeSearchForm)els.placeSearchForm.addEventListener("submit",e=>{e.preventDefault();searchPlaces(els.placeSearchInput.value);});
+  if(els.placeSearchInput)els.placeSearchInput.addEventListener("input",()=>{if(!els.placeSearchInput.value.trim())els.placeSearchResults.hidden=true;});
+  document.addEventListener("click",e=>{if(!e.target.closest(".place-search")&&els.placeSearchResults)els.placeSearchResults.hidden=true;});
+  if(els.closeRouteBtn)els.closeRouteBtn.addEventListener("click",clearRoute);
+  if(els.navigationBtn)els.navigationBtn.addEventListener("click",toggleNavigation);
+  if(els.duaBtn)els.duaBtn.addEventListener("click",()=>{els.duaModal.hidden=false;});
+  if(els.duaCloseBtn)els.duaCloseBtn.addEventListener("click",()=>{els.duaModal.hidden=true;});
+  if(els.duaModal)els.duaModal.addEventListener("click",e=>{if(e.target===els.duaModal)els.duaModal.hidden=true;});
 
   loadTargets();
   // Varsayılanlar:

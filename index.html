@@ -57,7 +57,7 @@
           </div>
         </div>
         <div id="emptyState" class="empty">
-          Haritada bir noktaya tıkla. Hedefi daha sonra tutup sürükleyebilirsin.
+          Önce “Hedef Ekle” düğmesine bas. Sonra haritada istediğin noktaya dokun.
         </div>
         <div id="targets" class="targets" aria-live="polite"></div>
       </section>
@@ -130,7 +130,7 @@
 
       <div class="source-note">
         Meteoroloji: <strong>Open‑Meteo</strong><br>
-        Rüzgâr yüksekliği: 10 m · Yenileme: 5 sn
+        Rüzgâr yüksekliği: 10 m · Yenileme: 5 dk
       </div>
     </aside>
 
@@ -143,6 +143,28 @@
       <section class="map-wrap">
         <div id="map" aria-label="Rüzgâr haritası"></div>
 
+        <div class="place-search">
+          <form id="placeSearchForm" autocomplete="off">
+            <span class="search-icon">⌕</span>
+            <input id="placeSearchInput" type="search" placeholder="Yer, adres veya işletme ara…" />
+            <button type="submit">Ara</button>
+          </form>
+          <div id="placeSearchResults" class="place-search-results" hidden></div>
+        </div>
+
+        <div id="routePanel" class="route-panel" hidden>
+          <div class="route-panel-head">
+            <div><small>YOL TARİFİ</small><strong id="routeTargetName">—</strong></div>
+            <button id="closeRouteBtn" type="button">×</button>
+          </div>
+          <div class="route-stats">
+            <div><small>Kalan</small><strong id="routeDistance">—</strong></div>
+            <div><small>Süre</small><strong id="routeDuration">—</strong></div>
+          </div>
+          <div id="routeInstruction" class="route-instruction">Rota hazırlanıyor…</div>
+          <button id="navigationBtn" class="navigation-btn" type="button">Navigasyonu Başlat</button>
+        </div>
+
         <div class="map-topbar">
           <div class="map-badge">
             <span class="badge-dot"></span>
@@ -151,11 +173,22 @@
               <strong id="centerWindTop">Kapalı</strong>
             </div>
           </div>
-          <div class="map-hint">Hedef eklemek için haritaya tıkla · Noktayı sürükleyerek taşı</div>
+          <div class="map-hint">Hedef eklemek için önce “Hedef Ekle” düğmesine bas</div>
         </div>
 
         <div id="qiblaAligned" class="qibla-aligned" hidden aria-live="polite">
           <strong>Kıble ile hizalandı</strong>
+        </div>
+
+        <button id="duaBtn" class="dua-btn" type="button" hidden>Bir duanızı alırız</button>
+        <div id="duaModal" class="dua-modal" hidden>
+          <div class="dua-card">
+            <button id="duaCloseBtn" class="dua-close" type="button">×</button>
+            <div class="dua-symbol">☾</div>
+            <strong>Bir Fâtiha rica ederiz</strong>
+            <p>Alibey Yıldırım<br>Sıtkiye Yıldırım<br>Fatma Yıldırım</p>
+            <div class="dua-text">ruhlarına Fâtiha</div>
+          </div>
         </div>
 
         <div id="centerWind" class="center-wind" hidden aria-live="polite">
