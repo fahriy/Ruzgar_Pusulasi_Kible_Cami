@@ -129,3 +129,14 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - GPS konum noktası ve bakış oku tek bir 72×72 marker içinde çizilir.
 - Leaflet anchor noktası `[36,36]`; GPS noktası ve okun `transform-origin` merkezi de tam `[36,36]` konumundadır.
 - Böylece harita yakınlaştırma, kaydırma, GPS güncellemesi ve mobil/masaüstü CSS farklarında iki işaret birbirinden ayrılamaz.
+
+
+## v12
+- v11'deki kaymanın gerçek nedeni bulundu: dış marker CSS'i Leaflet'in `iconAnchor` için verdiği negatif margin'i eziyordu.
+- Konum ikonu artık `className:""` ile Leaflet'in doğal merkezleme davranışını kullanır.
+- Tek gerçek konum noktası vardır; bakış oku aynı 64×64 marker içinde tam `[32,32]` merkezinden döner.
+- GPS doğruluk halkası haritadan kaldırıldı; hangi noktanın gerçek konum olduğu artık karışmaz.
+- Mobil arayüz daha kompakt yapıldı: üst başlık, alt toolbar, zoom kontrolleri ve Kıble araçları küçültüldü.
+- Mobilde harita merkezi rüzgâr bilgi kutusu ve rüzgâr lejandı gizlendi.
+- Hedef yokken hedef paneli mobilde tamamen gizlenir; hedef varsa ince yatay şerit olarak kalır.
+- **En Yakın Camiyi Bul** düğmesi yalnızca Kıble açıkken görünür.

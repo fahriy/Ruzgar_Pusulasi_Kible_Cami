@@ -332,55 +332,55 @@
   function makeLocationIcon() {
     const showHeading=headingArrowOn && deviceHeading!=null;
     const heading=showHeading ? deviceHeading : 0;
+
+    // className boş bırakılıyor:
+    // Leaflet kendi iconAnchor marginlerini uygulayacak.
+    // CSS artık marker dış kutusunun margin değerine dokunmuyor.
     return L.divIcon({
-      className:"user-location-marker-wrap",
+      className:"",
       html:`
         <div class="user-location-composite">
           ${showHeading ? `<div class="user-heading-arrow" style="transform:rotate(${heading}deg)"></div>` : ""}
           <div class="location-pin"></div>
         </div>`,
-      iconSize:[72,72],
-      iconAnchor:[36,36]
+      iconSize:[64,64],
+      iconAnchor:[32,32]
     });
   }
 
   function updateUserMarker() {
     if (!currentPosition) return;
-    const ll = [currentPosition.lat, currentPosition.lng];
+    const ll=[currentPosition.lat,currentPosition.lng];
 
-    if (!userMarker) {
-      userMarker = L.marker(ll, {
-        icon: makeLocationIcon(),
-        draggable: manualLocation,
-        zIndexOffset: 1000
+    // Eski doğruluk halkası kafa karıştırdığı için artık haritada gösterilmiyor.
+    if(accuracyCircle){
+      map.removeLayer(accuracyCircle);
+      accuracyCircle=null;
+    }
+
+    if(!userMarker){
+      userMarker=L.marker(ll,{
+        icon:makeLocationIcon(),
+        draggable:manualLocation,
+        zIndexOffset:1000
       }).addTo(map);
 
-      userMarker.on("drag", e => {
-        if (!manualLocation) return;
-        const p = e.target.getLatLng();
-        currentPosition = {lat:p.lat,lng:p.lng,accuracy:0};
+      userMarker.on("drag",e=>{
+        if(!manualLocation) return;
+        const p=e.target.getLatLng();
+        currentPosition={lat:p.lat,lng:p.lng,accuracy:0};
         updateLocationUI();
         updateTargetLines();
         renderTargetsList();
         updateCompass();
+        updateQiblaLayer();
       });
 
-      accuracyCircle = L.circle(ll, {
-        radius: radiusForAccuracy(),
-        color: "#1769e0",
-        weight: 1,
-        fillColor: "#1769e0",
-        fillOpacity: .08,
-        interactive: false
-      }).addTo(map);
-
-      map.setView(ll, accuracyZoom());
-    } else {
+      map.setView(ll,accuracyZoom());
+    }else{
       userMarker.setLatLng(ll);
       userMarker.setIcon(makeLocationIcon());
       manualLocation ? userMarker.dragging.enable() : userMarker.dragging.disable();
-      accuracyCircle.setLatLng(ll);
-      accuracyCircle.setRadius(radiusForAccuracy());
     }
   }
 
@@ -549,6 +549,7 @@
   function renderTargetsList() {
     els.targets.innerHTML="";
     els.emptyState.hidden=targets.length>0;
+    document.body.classList.toggle("has-targets",targets.length>0);
 
     for (const t of targets) {
       const row=document.createElement("div");
@@ -1325,6 +1326,11 @@
     if(els.drawerQiblaToggle) els.drawerQiblaToggle.checked=qiblaOn;
 
     if(els.duaPrompt) els.duaPrompt.hidden=!qiblaOn;
+    if(els.nearestMosqueBtn) els.nearestMosqueBtn.hidden=!qiblaOn;
+
+    if(!qiblaOn){
+      clearMosqueResults();
+    }
 
     if(qiblaOn){
       // Kıble açılırsa bakış oku da otomatik açılsın.
@@ -1662,6 +1668,7 @@
     }
   });
 
+  if(els.nearestMosqueBtn) els.nearestMosqueBtn.hidden=!qiblaOn;
   loadTargets();
   // Varsayılanlar:
   // Rüzgâr açık; GPS takibi, merkez rüzgâr, bakış oku ve kıble kapalı.
