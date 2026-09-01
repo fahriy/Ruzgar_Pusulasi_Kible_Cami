@@ -330,11 +330,17 @@
   }
 
   function makeLocationIcon() {
+    const showHeading=headingArrowOn && deviceHeading!=null;
+    const heading=showHeading ? deviceHeading : 0;
     return L.divIcon({
-      className: "",
-      html: '<div class="location-pin"></div>',
-      iconSize: [22,22],
-      iconAnchor: [11,11]
+      className:"user-location-marker-wrap",
+      html:`
+        <div class="user-location-composite">
+          ${showHeading ? `<div class="user-heading-arrow" style="transform:rotate(${heading}deg)"></div>` : ""}
+          <div class="location-pin"></div>
+        </div>`,
+      iconSize:[72,72],
+      iconAnchor:[36,36]
     });
   }
 
@@ -371,6 +377,7 @@
       map.setView(ll, accuracyZoom());
     } else {
       userMarker.setLatLng(ll);
+      userMarker.setIcon(makeLocationIcon());
       manualLocation ? userMarker.dragging.enable() : userMarker.dragging.disable();
       accuracyCircle.setLatLng(ll);
       accuracyCircle.setRadius(radiusForAccuracy());
@@ -1212,32 +1219,20 @@
     syncMobileControls();
   }
 
-  function headingIcon(heading){
-    return L.divIcon({
-      className:"heading-marker-wrap",
-      html:`<div class="heading-arrow-marker" style="transform:rotate(${heading}deg)"><span class="heading-center-dot"></span></div>`,
-      iconSize:[52,52],
-      iconAnchor:[26,26]
-    });
-  }
-
   function updateHeadingMarker(){
-    if(!map) return;
-    if(!headingArrowOn||!currentPosition||deviceHeading==null){
-      if(headingMarker){map.removeLayer(headingMarker);headingMarker=null;}
-      updateQiblaAlignment();
-      return;
+    // Bakış oku artık ayrı bir marker değildir.
+    // Aynı userMarker içinde GPS noktasının tam merkezinden döner.
+    if(headingMarker){
+      map.removeLayer(headingMarker);
+      headingMarker=null;
     }
-    const ll=[currentPosition.lat,currentPosition.lng];
-    const icon=headingIcon(deviceHeading);
-    if(!headingMarker){
-      headingMarker=L.marker(ll,{icon,interactive:false,keyboard:false,zIndexOffset:1900}).addTo(map);
-    }else{
-      headingMarker.setLatLng(ll);
-      headingMarker.setIcon(icon);
+    if(userMarker && currentPosition){
+      userMarker.setIcon(makeLocationIcon());
+      userMarker.setLatLng([currentPosition.lat,currentPosition.lng]);
     }
     updateQiblaAlignment();
   }
+
 
   async function setHeadingArrowEnabled(enabled){
     headingArrowOn=!!enabled;

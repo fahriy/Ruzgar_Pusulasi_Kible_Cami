@@ -122,3 +122,10 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Bakış oku artık tüm ekranlarda aynı 52×52 koordinat sistemini kullanır.
 - GPS koordinatı, `iconAnchor [26,26]` ve okun dönüş merkezi aynı noktaya sabitlendi.
 - Görsel merkez kontrolü için okun merkezine küçük bir nokta eklendi.
+
+
+## v11
+- Bakış oku artık GPS konumundan ayrı bir Leaflet marker değildir.
+- GPS konum noktası ve bakış oku tek bir 72×72 marker içinde çizilir.
+- Leaflet anchor noktası `[36,36]`; GPS noktası ve okun `transform-origin` merkezi de tam `[36,36]` konumundadır.
+- Böylece harita yakınlaştırma, kaydırma, GPS güncellemesi ve mobil/masaüstü CSS farklarında iki işaret birbirinden ayrılamaz.
