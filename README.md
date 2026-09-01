@@ -61,3 +61,10 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Kıble hizalanmasında harita üstündeki yeşil onay işareti kaldırıldı; yalnızca "Kıble ile hizalandı" yazısı görünür.
 - Hizalanınca telefon yön oku görünür kalır.
 - Cihaz yönü sensörü sürekli dinlenir; telefon çevrildikçe yön oku anlık güncellenir.
+
+
+## v4 arayüz güncellemeleri
+- Harita merkezindeki rüzgâr göstergesinde artık yalnızca ok görünür; yön yazısı ve hız kaldırıldı.
+- Açılıp kapanan ayarların tamamı GPS takibiyle aynı switch biçimine çevrildi.
+- Mobil ayar çekmecesindeki aç/kapa seçenekleri de switch biçimindedir.
+- Sol üstteki harita merkezi rüzgâr bilgi kartı, harita zoom düğmelerinin üstüne taşındı.

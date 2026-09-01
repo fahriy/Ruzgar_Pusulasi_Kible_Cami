@@ -65,30 +65,60 @@
       <section class="panel controls-panel">
         <div class="eyebrow">KONTROLLER</div>
         <div class="control-stack">
-          <button id="windBtn" class="control-btn active-look" type="button">
-            <span class="control-icon">≋</span><span>Rüzgârı Aç</span>
-          </button>
-          <button id="satelliteBtn" class="control-btn" type="button">
-            <span class="control-icon">◫</span><span>Uyduyu Aç</span>
-          </button>
+          <label class="switch-row">
+            <span>
+              <b>Rüzgâr</b>
+              <small>Rüzgâr katmanını aç / kapat</small>
+            </span>
+            <input id="windToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="switch-row">
+            <span>
+              <b>Uydu görünümü</b>
+              <small>Normal / uydu haritası</small>
+            </span>
+            <input id="satelliteToggle" type="checkbox" />
+            <i></i>
+          </label>
           <button id="recenterBtn" class="control-btn" type="button">
             <span class="control-icon">⌾</span><span>Konumuma Dön</span>
           </button>
           <button id="manualLocationBtn" class="control-btn" type="button">
             <span class="control-icon">✥</span><span>Konumu Elle Düzelt</span>
           </button>
-          <button id="orientationBtn" class="control-btn" type="button">
-            <span class="control-icon">⌁</span><span>Pusulayı Aç</span>
-          </button>
-          <button id="qiblaBtn" class="control-btn qibla-control" type="button">
-            <span class="control-icon">◈</span><span>Kıbleyi Aç</span>
-          </button>
-          <button id="headingArrowBtn" class="control-btn" type="button">
-            <span class="control-icon">➤</span><span>Bakış Okunu Aç</span>
-          </button>
-          <button id="centerWindToggleBtn" class="control-btn" type="button">
-            <span class="control-icon">⊕</span><span>Merkez Rüzgârını Aç</span>
-          </button>
+          <label class="switch-row">
+            <span>
+              <b>Pusula</b>
+              <small>Telefon yön sensörünü aç / kapat</small>
+            </span>
+            <input id="orientationToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="switch-row">
+            <span>
+              <b>Kıble</b>
+              <small>Kâbe yönünü göster</small>
+            </span>
+            <input id="qiblaToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="switch-row">
+            <span>
+              <b>Bakış oku</b>
+              <small>Telefonun baktığı yönü göster</small>
+            </span>
+            <input id="headingArrowToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="switch-row">
+            <span>
+              <b>Merkez rüzgârı</b>
+              <small>Harita ortasındaki oku göster</small>
+            </span>
+            <input id="centerWindToggle" type="checkbox" />
+            <i></i>
+          </label>
 
           <label class="switch-row">
             <span><b>GPS Takibi</b><small>Konum değişince haritayı takip et</small></span>
@@ -131,9 +161,7 @@
         <div id="centerWind" class="center-wind" hidden aria-live="polite">
           <div class="center-reticle"></div>
           <div id="centerWindArrow" class="center-wind-arrow">➤</div>
-          <div class="center-wind-chip">
-            <span id="centerWindDirection">—</span>
-          </div>
+          
         </div>
 
         <div id="targetAddBanner" class="target-add-banner" hidden>
@@ -208,14 +236,56 @@
         </div>
 
         <div class="mobile-drawer-grid">
-          <button id="drawerWindBtn" type="button"><span>≋</span><b>Rüzgâr</b><small>Aç / kapat</small></button>
-          <button id="drawerSatelliteBtn" type="button"><span>◫</span><b>Harita</b><small>Uydu / normal</small></button>
+          <label class="mobile-switch-card">
+            <span>
+              <b>Rüzgâr</b>
+              <small>Rüzgâr katmanını aç / kapat</small>
+            </span>
+            <input id="drawerWindToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="mobile-switch-card">
+            <span>
+              <b>Uydu görünümü</b>
+              <small>Normal / uydu haritası</small>
+            </span>
+            <input id="drawerSatelliteToggle" type="checkbox" />
+            <i></i>
+          </label>
           <button id="drawerRecenterBtn" type="button"><span>⌾</span><b>Konum</b><small>Merkeze dön</small></button>
           <button id="drawerManualBtn" type="button"><span>✥</span><b>Konumu düzelt</b><small>Elle ayarla</small></button>
-          <button id="drawerCompassBtn" type="button"><span>⌁</span><b>Pusula</b><small>Sensörü aç</small></button>
-          <button id="drawerQiblaBtn" type="button"><span>◈</span><b>Kıble</b><small>Kâbe yönünü göster</small></button>
-          <button id="drawerHeadingBtn" type="button"><span>➤</span><b>Bakış oku</b><small>Telefon yönünü göster</small></button>
-          <button id="drawerCenterWindBtn" type="button"><span>⊕</span><b>Merkez rüzgârı</b><small>Harita ortasında göster</small></button>
+          <label class="mobile-switch-card">
+            <span>
+              <b>Pusula</b>
+              <small>Telefon yön sensörünü aç / kapat</small>
+            </span>
+            <input id="drawerCompassToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="mobile-switch-card">
+            <span>
+              <b>Kıble</b>
+              <small>Kâbe yönünü göster</small>
+            </span>
+            <input id="drawerQiblaToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="mobile-switch-card">
+            <span>
+              <b>Bakış oku</b>
+              <small>Telefon yönünü göster</small>
+            </span>
+            <input id="drawerHeadingToggle" type="checkbox" />
+            <i></i>
+          </label>
+          <label class="mobile-switch-card">
+            <span>
+              <b>Merkez rüzgârı</b>
+              <small>Harita ortasındaki oku göster</small>
+            </span>
+            <input id="drawerCenterWindToggle" type="checkbox" />
+            <i></i>
+          </label>
           <button id="drawerAddTargetBtn" type="button"><span>＋</span><b>Hedef ekle</b><small>Haritadan nokta seç</small></button>
         </div>
 

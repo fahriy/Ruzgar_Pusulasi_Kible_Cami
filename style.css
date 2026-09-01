@@ -666,3 +666,74 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
     left:8px;right:8px;top:52px;transform:none;justify-content:space-between
   }
 }
+
+
+/* ===== v4 toggle switches / map badge placement ===== */
+.mobile-switch-card{
+  min-height:70px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  background:rgba(255,255,255,.04);
+  color:#fff;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.mobile-switch-card span{min-width:0}
+.mobile-switch-card b{display:block;font-size:12px}
+.mobile-switch-card small{
+  display:block;color:#8095a5;font-size:9px;margin-top:3px;line-height:1.25
+}
+.mobile-switch-card input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+.mobile-switch-card i{
+  width:44px;height:25px;border-radius:999px;background:#29404f;
+  position:relative;flex:0 0 auto;transition:.18s
+}
+.mobile-switch-card i:after{
+  content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;
+  border-radius:50%;background:#dbe5ea;transition:.18s
+}
+.mobile-switch-card input:checked+i{background:#ff3f67}
+.mobile-switch-card input:checked+i:after{transform:translateX(19px);background:#fff}
+
+/* Harita merkezi rüzgâr bilgi kartını Leaflet zoom kontrolünün tam üstüne taşı */
+.map-topbar{
+  top:auto!important;
+  left:10px!important;
+  right:auto!important;
+  bottom:142px!important;
+  width:auto!important;
+  max-width:240px;
+  z-index:1100!important;
+}
+.map-badge{
+  max-width:220px;
+}
+
+/* Merkezde yalnızca ok */
+.center-wind{
+  width:58px!important;
+  height:58px!important;
+}
+.center-wind-chip{display:none!important}
+
+@media(max-width:760px){
+  .map-topbar{
+    left:8px!important;
+    bottom:138px!important;
+    top:auto!important;
+  }
+  .map-badge{
+    max-width:190px;
+  }
+  .center-wind{
+    width:52px!important;
+    height:52px!important;
+  }
+}

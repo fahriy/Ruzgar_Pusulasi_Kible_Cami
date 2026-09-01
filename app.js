@@ -48,11 +48,11 @@
     accuracyStatus: $("accuracyStatus"),
     orientationStatus: $("orientationStatus"),
     windStatus: $("windStatus"),
-    orientationBtn: $("orientationBtn"),
+    orientationToggle: $("orientationToggle"),
     recenterBtn: $("recenterBtn"),
     manualLocationBtn: $("manualLocationBtn"),
-    satelliteBtn: $("satelliteBtn"),
-    windBtn: $("windBtn"),
+    satelliteToggle: $("satelliteToggle"),
+    windToggle: $("windToggle"),
     windLegend: $("windLegend"),
     manualBanner: $("manualBanner"),
     finishManualBtn: $("finishManualBtn"),
@@ -80,20 +80,20 @@
     mobileDrawer: $("mobileDrawer"),
     mobileDrawerBackdrop: $("mobileDrawerBackdrop"),
     mobileDrawerClose: $("mobileDrawerClose"),
-    drawerWindBtn: $("drawerWindBtn"),
-    drawerSatelliteBtn: $("drawerSatelliteBtn"),
+    drawerWindToggle: $("drawerWindToggle"),
+    drawerSatelliteToggle: $("drawerSatelliteToggle"),
     drawerRecenterBtn: $("drawerRecenterBtn"),
     drawerManualBtn: $("drawerManualBtn"),
-    drawerCompassBtn: $("drawerCompassBtn"),
+    drawerCompassToggle: $("drawerCompassToggle"),
     mobileFollowToggle: $("mobileFollowToggle"),
     mobileLocationStatus: $("mobileLocationStatus"),
     mobileWindStatus: $("mobileWindStatus"),
-    qiblaBtn: $("qiblaBtn"),
-    headingArrowBtn: $("headingArrowBtn"),
-    centerWindToggleBtn: $("centerWindToggleBtn"),
-    drawerQiblaBtn: $("drawerQiblaBtn"),
-    drawerHeadingBtn: $("drawerHeadingBtn"),
-    drawerCenterWindBtn: $("drawerCenterWindBtn"),
+    qiblaToggle: $("qiblaToggle"),
+    headingArrowToggle: $("headingArrowToggle"),
+    centerWindToggle: $("centerWindToggle"),
+    drawerQiblaToggle: $("drawerQiblaToggle"),
+    drawerHeadingToggle: $("drawerHeadingToggle"),
+    drawerCenterWindToggle: $("drawerCenterWindToggle"),
     qiblaAligned: $("qiblaAligned"),
     addTargetModeBtn: $("addTargetModeBtn"),
     drawerAddTargetBtn: $("drawerAddTargetBtn"),
@@ -547,8 +547,7 @@
     activeBaseLayer.bringToBack();
 
     document.body.classList.toggle("satellite-active",satelliteOn);
-    els.satelliteBtn.querySelector("span:last-child").textContent=satelliteOn?"Normal Haritaya Dön":"Uyduyu Aç";
-
+    
     // tile katmanı değişince boyutu tekrar hesapla
     setTimeout(()=>map.invalidateSize(false),100);
     setTimeout(syncMobileControls,0);
@@ -675,7 +674,6 @@
       els.centerWindArrow.style.transform =
         `translate(-50%,-50%) rotate(${toDir - 90}deg)`;
     }
-    if(els.centerWindDirection) els.centerWindDirection.textContent=`${Math.round(toDir)}° ${dir}`;
     if (els.centerWindTop) els.centerWindTop.textContent = text;
     if (els.centerWindBottom) els.centerWindBottom.textContent = text;
   }
@@ -813,8 +811,7 @@
 
   function toggleWind() {
     windOn=!windOn;
-    els.windBtn.querySelector("span:last-child").textContent=windOn?"Rüzgârı Kapat":"Rüzgârı Aç";
-    els.windLegend.hidden=!windOn;
+        els.windLegend.hidden=!windOn;
 
     if (windOn) {
       refreshWind();
@@ -831,9 +828,8 @@
 
   function setCenterWindEnabled(enabled){
     centerWindOn=!!enabled;
-    els.centerWindToggleBtn.classList.toggle("is-active",centerWindOn);
-    els.centerWindToggleBtn.querySelector("span:last-child").textContent=
-      centerWindOn?"Merkez Rüzgârını Kapat":"Merkez Rüzgârını Aç";
+    if(els.centerWindToggle) els.centerWindToggle.checked=centerWindOn;
+    if(els.drawerCenterWindToggle) els.drawerCenterWindToggle.checked=centerWindOn;
     if(!centerWindOn) clearCenterWindUI();
     else if(windOn) refreshWind();
     syncMobileControls();
@@ -867,9 +863,8 @@
 
   async function setHeadingArrowEnabled(enabled){
     headingArrowOn=!!enabled;
-    els.headingArrowBtn.classList.toggle("is-active",headingArrowOn);
-    els.headingArrowBtn.querySelector("span:last-child").textContent=
-      headingArrowOn?"Bakış Okunu Kapat":"Bakış Okunu Aç";
+    if(els.headingArrowToggle) els.headingArrowToggle.checked=headingArrowOn;
+    if(els.drawerHeadingToggle) els.drawerHeadingToggle.checked=headingArrowOn;
     if(headingArrowOn&&deviceHeading==null) await enableOrientation();
     updateHeadingMarker();
     syncMobileControls();
@@ -953,8 +948,8 @@
 
   async function setQiblaEnabled(enabled){
     qiblaOn=!!enabled;
-    els.qiblaBtn.classList.toggle("is-active",qiblaOn);
-    els.qiblaBtn.querySelector("span:last-child").textContent=qiblaOn?"Kıbleyi Kapat":"Kıbleyi Aç";
+    if(els.qiblaToggle) els.qiblaToggle.checked=qiblaOn;
+    if(els.drawerQiblaToggle) els.drawerQiblaToggle.checked=qiblaOn;
 
     if(qiblaOn){
       // Kıble açılırsa bakış oku da otomatik açılsın.
@@ -1078,7 +1073,8 @@
 
           deviceHeading=normalize360(heading);
           els.orientationStatus.textContent=`${Math.round(deviceHeading)}° ${directionText(deviceHeading)}`;
-          els.orientationBtn.querySelector("span:last-child").textContent="Pusula Açık";
+          if(els.orientationToggle) els.orientationToggle.checked=true;
+          if(els.drawerCompassToggle) els.drawerCompassToggle.checked=true;
           updateCompass();
           updateHeadingMarker();
           updateQiblaAlignment();
@@ -1116,20 +1112,22 @@
   }
 
   function syncMobileControls() {
-    if (els.mobileWindBtn) els.mobileWindBtn.classList.toggle("is-active", windOn);
-    if (els.mobileSatelliteBtn) els.mobileSatelliteBtn.classList.toggle("is-active", satelliteOn);
     if (els.mobileFollowToggle) els.mobileFollowToggle.checked=els.followToggle.checked;
     if(els.mobileWindStatus) els.mobileWindStatus.textContent=els.windStatus.textContent;
     if(els.mobileLocationStatus) els.mobileLocationStatus.textContent=els.locationStatus.textContent;
     if(els.mobileAddTargetBtn) els.mobileAddTargetBtn.classList.toggle("is-active",targetAddMode);
-    if(els.drawerQiblaBtn) els.drawerQiblaBtn.classList.toggle("is-active",qiblaOn);
-    if(els.drawerHeadingBtn) els.drawerHeadingBtn.classList.toggle("is-active",headingArrowOn);
-    if(els.drawerCenterWindBtn) els.drawerCenterWindBtn.classList.toggle("is-active",centerWindOn);
+    if(els.windToggle) els.windToggle.checked=windOn;
+    if(els.satelliteToggle) els.satelliteToggle.checked=satelliteOn;
+    if(els.qiblaToggle) els.qiblaToggle.checked=qiblaOn;
+    if(els.headingArrowToggle) els.headingArrowToggle.checked=headingArrowOn;
+    if(els.centerWindToggle) els.centerWindToggle.checked=centerWindOn;
+    if(els.drawerWindToggle) els.drawerWindToggle.checked=windOn;
+    if(els.drawerSatelliteToggle) els.drawerSatelliteToggle.checked=satelliteOn;
+    if(els.drawerQiblaToggle) els.drawerQiblaToggle.checked=qiblaOn;
+    if(els.drawerHeadingToggle) els.drawerHeadingToggle.checked=headingArrowOn;
+    if(els.drawerCenterWindToggle) els.drawerCenterWindToggle.checked=centerWindOn;
+    if(els.drawerCompassToggle) els.drawerCompassToggle.checked=deviceHeading!=null;
   }
-
-  els.orientationBtn.addEventListener("click",enableOrientation);
-  els.satelliteBtn.addEventListener("click",toggleSatellite);
-  els.windBtn.addEventListener("click",toggleWind);
 
   els.manualLocationBtn.addEventListener("click",()=>setManualMode(true));
   els.finishManualBtn.addEventListener("click",()=>{
@@ -1180,15 +1178,6 @@
   setInterval(syncMobileControls,1000);
 
 
-  els.qiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); });
-  els.headingArrowBtn.addEventListener("click",async()=>{ await setHeadingArrowEnabled(!headingArrowOn); });
-  els.centerWindToggleBtn.addEventListener("click",()=>setCenterWindEnabled(!centerWindOn));
-
-  if(els.drawerQiblaBtn) els.drawerQiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); closeMobileDrawer(); });
-  if(els.drawerHeadingBtn) els.drawerHeadingBtn.addEventListener("click",async()=>{ await setHeadingArrowEnabled(!headingArrowOn); });
-  if(els.drawerCenterWindBtn) els.drawerCenterWindBtn.addEventListener("click",()=>setCenterWindEnabled(!centerWindOn));
-
-
   if(els.addTargetModeBtn) els.addTargetModeBtn.addEventListener("click",()=>setTargetAddMode(!targetAddMode));
   if(els.mobileAddTargetBtn) els.mobileAddTargetBtn.addEventListener("click",()=>setTargetAddMode(!targetAddMode));
   if(els.drawerAddTargetBtn) els.drawerAddTargetBtn.addEventListener("click",()=>{
@@ -1197,11 +1186,70 @@
   });
   if(els.cancelTargetAddBtn) els.cancelTargetAddBtn.addEventListener("click",()=>setTargetAddMode(false));
 
+
+  if(els.windToggle) els.windToggle.addEventListener("change",()=>{
+    if(els.windToggle.checked!==windOn) toggleWind();
+    syncMobileControls();
+  });
+  if(els.satelliteToggle) els.satelliteToggle.addEventListener("change",()=>{
+    if(els.satelliteToggle.checked!==satelliteOn) toggleSatellite();
+    syncMobileControls();
+  });
+  if(els.orientationToggle) els.orientationToggle.addEventListener("change",async()=>{
+    if(els.orientationToggle.checked){
+      await enableOrientation();
+    }else{
+      // Sensör dinlemeye devam edebilir; sadece görünür kullanım kapalı kabul edilir.
+      deviceHeading=null;
+      updateHeadingMarker();
+      updateQiblaAlignment();
+      els.orientationStatus.textContent="kapalı";
+    }
+    syncMobileControls();
+  });
+  if(els.qiblaToggle) els.qiblaToggle.addEventListener("change",async()=>{
+    await setQiblaEnabled(els.qiblaToggle.checked);
+  });
+  if(els.headingArrowToggle) els.headingArrowToggle.addEventListener("change",async()=>{
+    await setHeadingArrowEnabled(els.headingArrowToggle.checked);
+  });
+  if(els.centerWindToggle) els.centerWindToggle.addEventListener("change",()=>{
+    setCenterWindEnabled(els.centerWindToggle.checked);
+  });
+
+  if(els.drawerWindToggle) els.drawerWindToggle.addEventListener("change",()=>{
+    if(els.drawerWindToggle.checked!==windOn) toggleWind();
+    syncMobileControls();
+  });
+  if(els.drawerSatelliteToggle) els.drawerSatelliteToggle.addEventListener("change",()=>{
+    if(els.drawerSatelliteToggle.checked!==satelliteOn) toggleSatellite();
+    syncMobileControls();
+  });
+  if(els.drawerCompassToggle) els.drawerCompassToggle.addEventListener("change",async()=>{
+    if(els.drawerCompassToggle.checked) await enableOrientation();
+    else{
+      deviceHeading=null;
+      updateHeadingMarker();
+      updateQiblaAlignment();
+      els.orientationStatus.textContent="kapalı";
+    }
+    syncMobileControls();
+  });
+  if(els.drawerQiblaToggle) els.drawerQiblaToggle.addEventListener("change",async()=>{
+    await setQiblaEnabled(els.drawerQiblaToggle.checked);
+  });
+  if(els.drawerHeadingToggle) els.drawerHeadingToggle.addEventListener("change",async()=>{
+    await setHeadingArrowEnabled(els.drawerHeadingToggle.checked);
+  });
+  if(els.drawerCenterWindToggle) els.drawerCenterWindToggle.addEventListener("change",()=>{
+    setCenterWindEnabled(els.drawerCenterWindToggle.checked);
+  });
+
   loadTargets();
   // Varsayılanlar:
   // Rüzgâr açık, merkez rüzgâr kapalı, bakış oku kapalı, kıble kapalı.
-  els.windBtn.querySelector("span:last-child").textContent="Rüzgârı Kapat";
-  els.windBtn.classList.add("is-active");
+    if(els.windToggle) els.windToggle.checked=true;
+  if(els.drawerWindToggle) els.drawerWindToggle.checked=true;
   els.windLegend.hidden=false;
   setCenterWindEnabled(false);
   setTimeout(()=>{ if(windOn){ refreshWind(); startWindInterval(); } },500);
