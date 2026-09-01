@@ -96,3 +96,12 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Bu durumda ekranda **Konumumu Ortala** düğmesi görünür.
 - Kullanıcı düğmeye bastığında harita tekrar güncel konuma merkezlenir ve navigasyonun otomatik takip modu devam eder.
 - Haritayı yalnızca incelemek için sürüklemek navigasyonu veya rotayı kapatmaz.
+
+
+## v8
+- Haritadaki cami pinlerine dokununca o caminin yol tarifi açılır.
+- Navigasyon ekranına **Navigasyondan Çık** düğmesi eklendi.
+- Navigasyon sırasında **En Yakın Camiyi Bul** düğmesi ve cami seçim penceresi gizlenir; rota panelinin üstüne binmez.
+- Arama simgesine basınca gerçek arama textbox'ı açılır, tekrar basınca kapanır.
+- GPS takibi uygulama açıldığında varsayılan kapalıdır.
+- Dua düğmesindeki parmak, düğmenin üstünden aşağı doğru gelip gerçek dokunma hareketi yapar.

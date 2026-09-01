@@ -931,3 +931,52 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
     bottom:164px;
   }
 }
+
+
+/* ===== v8 fixes ===== */
+.place-search .search-form-hidden{display:none!important}
+.place-search.expanded .search-form-hidden{display:grid!important}
+.place-search.compact.expanded{
+  width:min(540px,calc(100% - 310px));
+}
+.place-search.compact.expanded form{
+  width:min(470px,calc(100vw - 160px));
+}
+
+/* Navigasyon ekranında üst üste binmeyi önle */
+.navigation-mode .nearest-mosque-btn,
+.navigation-mode .mosque-chooser{
+  display:none!important;
+}
+.route-panel{z-index:1505!important}
+
+.exit-navigation-btn{
+  width:100%;min-height:40px;margin-top:7px;
+  border:1px solid rgba(255,106,106,.28);border-radius:11px;
+  background:rgba(255,80,80,.10);color:#ffb7b7;
+  font-size:9px;font-weight:900;
+}
+.exit-navigation-btn[hidden]{display:none!important}
+
+/* Parmak, butonun üstünden aşağı inip tıklıyor */
+.dua-click-hand{
+  right:auto!important;left:50%!important;top:-31px!important;
+  font-size:25px!important;transform-origin:50% 100%!important;
+  animation:duaTapV8 1.8s ease-in-out infinite!important;
+  pointer-events:none;
+}
+@keyframes duaTapV8{
+  0%,100%{transform:translate(-50%,-5px);opacity:.42}
+  36%{transform:translate(-50%,5px);opacity:1}
+  49%{transform:translate(-50%,12px) scale(.90);opacity:1}
+  61%{transform:translate(-50%,5px) scale(1);opacity:.92}
+}
+
+@media(max-width:760px){
+  .place-search.compact.expanded{
+    left:8px!important;right:8px!important;width:auto!important
+  }
+  .place-search.compact.expanded form{
+    width:calc(100vw - 74px)!important
+  }
+}
