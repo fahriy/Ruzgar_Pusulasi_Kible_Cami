@@ -79,3 +79,20 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Kıble açılınca **Bir duanızı alırız** düğmesi görünür.
 - Dua düğmesinde Alibey Yıldırım, Sıtkiye Yıldırım ve Fatma Yıldırım ruhlarına Fâtiha metni gösterilir.
 - Harita güncel OpenStreetMap yol/veri altyapısını kullanır.
+
+
+## v6
+- “Bir duanızı alırız” düğmesinin yanında düğmeye doğru yumuşakça hareket eden parmak işareti eklendi.
+- Genel hedef navigasyonu kaldırıldı. Navigasyon artık yalnızca **En Yakın Camiyi Bul** üzerinden seçilen camiye yapılır.
+- Yakındaki camiler OpenStreetMap/Overpass verisinden bulunur ve mesafeye göre sıralanır.
+- Cami seçilince rota önce 10 saniye genel güzergâh olarak gösterilir, ardından otomatik navigasyon moduna geçer.
+- Kullanıcı **Özet Güzergâh** ile rotanın tamamını tekrar görebilir; **Navigasyona Dön** ile takip moduna geçer.
+- Yer arama kutusu varsayılan gizlidir; yalnızca arama simgesi görünür.
+- `7326/1` gibi slash içeren adresler için `7326/1`, `7326 1`, `7326-1` gibi alternatif sorgular otomatik denenir.
+
+
+## v7
+- Navigasyon sırasında kullanıcı haritayı elle sürüklerse otomatik GPS merkezleme geçici olarak durur.
+- Bu durumda ekranda **Konumumu Ortala** düğmesi görünür.
+- Kullanıcı düğmeye bastığında harita tekrar güncel konuma merkezlenir ve navigasyonun otomatik takip modu devam eder.
+- Haritayı yalnızca incelemek için sürüklemek navigasyonu veya rotayı kapatmaz.

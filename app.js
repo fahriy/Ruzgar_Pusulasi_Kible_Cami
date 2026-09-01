@@ -35,6 +35,11 @@
   let navigationOn = false;
   let lastRouteRefreshAt = 0;
   let lastRouteRefreshPos = null;
+  let selectedMosque = null;
+  let routeOverviewTimer = null;
+  let routeOverviewSeconds = 0;
+  let mosqueMarkersLayer = null;
+  let navigationAutoCenter = true;
   let windLayer = null;
   let windAbort = null;
   let windTimer = null;
@@ -118,7 +123,17 @@
     closeRouteBtn: $("closeRouteBtn"),
     duaBtn: $("duaBtn"),
     duaModal: $("duaModal"),
-    duaCloseBtn: $("duaCloseBtn")
+    duaCloseBtn: $("duaCloseBtn"),
+    duaPrompt: $("duaPrompt"),
+    placeSearch: $("placeSearch"),
+    placeSearchToggle: $("placeSearchToggle"),
+    nearestMosqueBtn: $("nearestMosqueBtn"),
+    mosqueChooser: $("mosqueChooser"),
+    closeMosqueChooser: $("closeMosqueChooser"),
+    mosqueResults: $("mosqueResults"),
+    routeOverviewBtn: $("routeOverviewBtn"),
+    routeCountdown: $("routeCountdown"),
+    navRecenterBtn: $("navRecenterBtn")
   };
 
   function initMap() {
@@ -159,6 +174,14 @@
     map.on("moveend zoomend", () => {
       if (windOn) scheduleWindRefresh();
       if (qiblaOn) updateQiblaLayer();
+    });
+
+    // Navigasyon sırasında kullanıcı haritayı elle sürüklerse
+    // otomatik merkezleme geçici olarak durur.
+    map.on("dragstart", () => {
+      if(!navigationOn) return;
+      navigationAutoCenter=false;
+      if(els.navRecenterBtn) els.navRecenterBtn.hidden=false;
     });
 
     setTimeout(() => map.invalidateSize(true), 60);
@@ -246,15 +269,21 @@
           if (windOn) scheduleWindRefresh();
           if(qiblaOn) updateQiblaLayer();
           updateHeadingMarker();
-          if(navigationOn && routeTargetId){
+          if(navigationOn && selectedMosque){
             const now=Date.now();
             const moved=!lastRouteRefreshPos || distanceMeters(lastRouteRefreshPos,currentPosition)>35;
             if(moved && now-lastRouteRefreshAt>12000){
               lastRouteRefreshAt=now;
               lastRouteRefreshPos={lat:currentPosition.lat,lng:currentPosition.lng};
-              buildRoute(routeTargetId,false);
+              buildRoute(selectedMosque,false);
             }
-            map.setView([currentPosition.lat,currentPosition.lng],Math.max(map.getZoom(),17),{animate:true});
+            if(navigationAutoCenter){
+              map.setView(
+                [currentPosition.lat,currentPosition.lng],
+                Math.max(map.getZoom(),17),
+                {animate:true}
+              );
+            }
           }
 
           if (els.followToggle.checked && !navigationOn) {
@@ -554,18 +583,260 @@
       del.textContent="×";
       del.addEventListener("click",()=>removeTarget(t.id));
 
-      row.append(dot,main,routeBtn,del);
+      row.append(dot,main,del);
       els.targets.appendChild(row);
     }
   }
 
 
   function formatDuration(seconds){if(!Number.isFinite(seconds))return "—";const min=Math.max(1,Math.round(seconds/60));if(min<60)return `${min} dk`;const h=Math.floor(min/60),m=min%60;return m?`${h} sa ${m} dk`:`${h} sa`;}
-  async function searchPlaces(query){const q=(query||"").trim();if(q.length<2)return;els.placeSearchResults.hidden=false;els.placeSearchResults.innerHTML='<div class="search-empty">Aranıyor…</div>';try{const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=tr&q=${encodeURIComponent(q)}`;const res=await fetch(url,{headers:{"Accept":"application/json"}});if(!res.ok)throw new Error("search");const data=await res.json();if(!Array.isArray(data)||!data.length){els.placeSearchResults.innerHTML='<div class="search-empty">Sonuç bulunamadı.</div>';return;}els.placeSearchResults.innerHTML="";data.forEach(item=>{const lat=Number(item.lat),lng=Number(item.lon);if(!Number.isFinite(lat)||!Number.isFinite(lng))return;const name=item?.name||item?.display_name?.split(",")[0]||"Sonuç",full=item?.display_name||name;const b=document.createElement("button");b.type="button";b.className="search-result";b.innerHTML=`<strong>${escapeHtml(name)}</strong><small>${escapeHtml(full)}</small>`;b.addEventListener("click",()=>{els.placeSearchResults.hidden=true;els.placeSearchInput.value=name;map.setView([lat,lng],17);if(searchMarker)map.removeLayer(searchMarker);searchMarker=L.marker([lat,lng],{icon:L.divIcon({className:"",html:'<div class="search-pin">⌕</div>',iconSize:[32,32],iconAnchor:[16,16]}),zIndexOffset:1300}).addTo(map);searchMarker.bindTooltip(name,{direction:"top"}).openTooltip();});els.placeSearchResults.appendChild(b);});}catch(_){els.placeSearchResults.innerHTML='<div class="search-empty">Arama servisine ulaşılamadı.</div>';}}
-  function clearRoute(){navigationOn=false;document.body.classList.remove("navigation-mode");if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}routeTargetId=null;routeData=null;els.routePanel.hidden=true;els.navigationBtn.classList.remove("is-active");els.navigationBtn.textContent="Navigasyonu Başlat";}
+  function buildSearchVariants(query){
+    const q=query.trim().replace(/\s+/g," ");
+    const variants=[q];
+
+    // 7326/1 benzeri kapı/parsel biçimleri için servislerin anlayabildiği
+    // birkaç eşdeğer sorguyu sırayla dene.
+    if(/\d+\s*\/\s*\d+/.test(q)){
+      variants.push(q.replace(/(\d+)\s*\/\s*(\d+)/g,"$1 $2"));
+      variants.push(q.replace(/(\d+)\s*\/\s*(\d+)/g,"$1-$2"));
+      variants.push(q.replace(/(\d+)\s*\/\s*(\d+)/g,"$1/$2 numara"));
+    }
+
+    const c=map.getCenter();
+    // Son çare olarak mevcut harita merkezi bağlamını aramaya ekle.
+    variants.push(`${q}, Türkiye`);
+    return [...new Set(variants)].slice(0,5);
+  }
+
+  async function searchPlaces(query){
+    const q=(query||"").trim();
+    if(q.length<2) return;
+    els.placeSearchResults.hidden=false;
+    els.placeSearchResults.innerHTML='<div class="search-empty">Aranıyor…</div>';
+
+    try{
+      const variants=buildSearchVariants(q);
+      let data=[];
+      for(const variant of variants){
+        const c=map.getCenter();
+        const d=0.35;
+        const viewbox=`${c.lng-d},${c.lat+d},${c.lng+d},${c.lat-d}`;
+        const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=7&accept-language=tr&countrycodes=tr&viewbox=${encodeURIComponent(viewbox)}&bounded=0&q=${encodeURIComponent(variant)}`;
+        const res=await fetch(url,{headers:{"Accept":"application/json"}});
+        if(!res.ok) continue;
+        const found=await res.json();
+        if(Array.isArray(found)&&found.length){
+          data=found;
+          break;
+        }
+      }
+
+      if(!data.length){
+        els.placeSearchResults.innerHTML='<div class="search-empty">Sonuç bulunamadı. Mahalle/sokak adını da eklemeyi dene.</div>';
+        return;
+      }
+
+      els.placeSearchResults.innerHTML="";
+      data.forEach(item=>{
+        const lat=Number(item.lat),lng=Number(item.lon);
+        if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
+        const {name,full}=searchResultLabel(item);
+        const b=document.createElement("button");
+        b.type="button";
+        b.className="search-result";
+        b.innerHTML=`<strong>${escapeHtml(name)}</strong><small>${escapeHtml(full)}</small>`;
+        b.addEventListener("click",()=>{
+          els.placeSearchResults.hidden=true;
+          els.placeSearchInput.value=name;
+          map.setView([lat,lng],17);
+          if(searchMarker) map.removeLayer(searchMarker);
+          searchMarker=L.marker([lat,lng],{
+            icon:L.divIcon({
+              className:"",
+              html:'<div class="search-pin">⌕</div>',
+              iconSize:[32,32],iconAnchor:[16,16]
+            }),
+            zIndexOffset:1300
+          }).addTo(map);
+          searchMarker.bindTooltip(name,{permanent:false,direction:"top"}).openTooltip();
+        });
+        els.placeSearchResults.appendChild(b);
+      });
+    }catch(_){
+      els.placeSearchResults.innerHTML='<div class="search-empty">Arama servisine ulaşılamadı.</div>';
+    }
+  }
+
+  async function findNearbyMosques(){
+    if(!currentPosition){
+      alert("En yakın camileri bulmak için önce konum alınmalı.");
+      return;
+    }
+
+    els.mosqueChooser.hidden=false;
+    els.mosqueResults.innerHTML='<div class="search-empty">Yakındaki camiler aranıyor…</div>';
+
+    try{
+      const {lat,lng}=currentPosition;
+      const query=`[out:json][timeout:15];
+        (
+          nwr["amenity"="place_of_worship"]["religion"="muslim"](around:7000,${lat},${lng});
+          nwr["building"="mosque"](around:7000,${lat},${lng});
+        );
+        out center tags;`;
+      const url=`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+      const res=await fetch(url);
+      if(!res.ok) throw new Error("overpass");
+      const json=await res.json();
+
+      const list=(json.elements||[]).map(el=>{
+        const p=el.type==="node" ? {lat:el.lat,lng:el.lon} : {lat:el.center?.lat,lng:el.center?.lon};
+        if(!Number.isFinite(p.lat)||!Number.isFinite(p.lng)) return null;
+        const name=el.tags?.name || el.tags?.["name:tr"] || "İsimsiz Cami";
+        const dist=distanceMeters(currentPosition,p);
+        return {lat:p.lat,lng:p.lng,name,dist};
+      }).filter(Boolean)
+        .sort((a,b)=>a.dist-b.dist)
+        .filter((m,i,a)=>i===a.findIndex(x=>Math.abs(x.lat-m.lat)<0.00003&&Math.abs(x.lng-m.lng)<0.00003))
+        .slice(0,8);
+
+      if(!list.length){
+        els.mosqueResults.innerHTML='<div class="search-empty">Yakında kayıtlı cami bulunamadı.</div>';
+        return;
+      }
+
+      if(mosqueMarkersLayer) map.removeLayer(mosqueMarkersLayer);
+      mosqueMarkersLayer=L.layerGroup().addTo(map);
+
+      els.mosqueResults.innerHTML="";
+      list.forEach((m,i)=>{
+        const marker=L.marker([m.lat,m.lng]).addTo(mosqueMarkersLayer);
+        marker.bindTooltip(m.name,{direction:"top"});
+
+        const btn=document.createElement("button");
+        btn.type="button";
+        btn.className="mosque-result";
+        btn.innerHTML=`<span><strong>${escapeHtml(m.name)}</strong><small>${i===0?"En yakın cami":"Yakındaki cami"}</small></span><em>${formatDistance(m.dist)}</em>`;
+        btn.addEventListener("click",()=>{
+          els.mosqueChooser.hidden=true;
+          selectedMosque=m;
+          buildRoute(m,true);
+        });
+        els.mosqueResults.appendChild(btn);
+      });
+    }catch(_){
+      els.mosqueResults.innerHTML='<div class="search-empty">Cami arama servisine ulaşılamadı.</div>';
+    }
+  }
+
+
+  function clearRoute(){navigationOn=false;navigationAutoCenter=true;if(els.navRecenterBtn) els.navRecenterBtn.hidden=true;document.body.classList.remove("navigation-mode");if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}routeTargetId=null;routeData=null;els.routePanel.hidden=true;els.navigationBtn.classList.remove("is-active");els.navigationBtn.textContent="Navigasyonu Başlat";}
   function routeInstructionText(route){const step=route?.legs?.[0]?.steps?.find(s=>Number(s.distance)>5)||route?.legs?.[0]?.steps?.[0];if(!step)return "Rotayı takip edin.";const name=step.name?` · ${step.name}`:"";const type=step.maneuver?.type||"",modifier=step.maneuver?.modifier||"";const phrases={"depart":"Yola çıkın","arrive":"Hedefe ulaştınız","turn-left":"Sola dönün","turn-right":"Sağa dönün","turn-slight left":"Hafif sola yönelin","turn-slight right":"Hafif sağa yönelin","continue-straight":"Düz devam edin"};let key=type;if(type==="turn")key=`turn-${modifier}`;if(type==="continue")key=`continue-${modifier}`;return `${phrases[key]||"Rotayı takip edin"}${name}`;}
-  async function buildRoute(targetId,fit=true){const t=targets.find(x=>x.id===targetId);if(!t||!currentPosition){alert("Yol tarifi için önce konum alınmalı.");return;}routeTargetId=t.id;els.routePanel.hidden=false;els.routeTargetName.textContent=t.name;els.routeDistance.textContent="…";els.routeDuration.textContent="…";els.routeInstruction.textContent="Rota hazırlanıyor…";try{const coords=`${currentPosition.lng},${currentPosition.lat};${t.lng},${t.lat}`;const url=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`;const res=await fetch(url);if(!res.ok)throw new Error("route");const json=await res.json();const route=json?.routes?.[0];if(!route?.geometry?.coordinates)throw new Error("no-route");routeData=route;const latlngs=route.geometry.coordinates.map(c=>[c[1],c[0]]);if(routeLayer)map.removeLayer(routeLayer);routeLayer=L.polyline(latlngs,{color:"#46a9ff",weight:6,opacity:.9,lineCap:"round",lineJoin:"round"}).addTo(map);routeLayer.bringToFront();els.routeDistance.textContent=formatDistance(route.distance);els.routeDuration.textContent=formatDuration(route.duration);els.routeInstruction.textContent=routeInstructionText(route);if(fit&&!navigationOn)map.fitBounds(routeLayer.getBounds(),{padding:[45,45]});}catch(_){els.routeDistance.textContent="—";els.routeDuration.textContent="—";els.routeInstruction.textContent="Bu hedef için sürüş rotası alınamadı.";}}
-  function toggleNavigation(){if(!routeTargetId)return;navigationOn=!navigationOn;document.body.classList.toggle("navigation-mode",navigationOn);els.navigationBtn.classList.toggle("is-active",navigationOn);els.navigationBtn.textContent=navigationOn?"Navigasyonu Bitir":"Navigasyonu Başlat";if(navigationOn){els.followToggle.checked=false;if(els.mobileFollowToggle)els.mobileFollowToggle.checked=false;if(currentPosition)map.setView([currentPosition.lat,currentPosition.lng],18);buildRoute(routeTargetId,false);}setTimeout(()=>map.invalidateSize(true),100);}
+  async function buildRoute(mosque,fit=true){
+    if(!mosque || !currentPosition){
+      alert("Yol tarifi için önce konum alınmalı.");
+      return;
+    }
+
+    selectedMosque=mosque;
+    routeTargetId=null;
+    els.routePanel.hidden=false;
+    els.routeTargetName.textContent=mosque.name || "Seçilen cami";
+    els.routeDistance.textContent="…";
+    els.routeDuration.textContent="…";
+    els.routeInstruction.textContent="Rota hazırlanıyor…";
+
+    try{
+      const coords=`${currentPosition.lng},${currentPosition.lat};${mosque.lng},${mosque.lat}`;
+      const url=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`;
+      const res=await fetch(url);
+      if(!res.ok) throw new Error("route");
+      const json=await res.json();
+      const route=json?.routes?.[0];
+      if(!route?.geometry?.coordinates) throw new Error("no-route");
+
+      routeData=route;
+      const latlngs=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+      if(routeLayer) map.removeLayer(routeLayer);
+      routeLayer=L.polyline(latlngs,{
+        color:"#46a9ff",weight:6,opacity:.9,lineCap:"round",lineJoin:"round"
+      }).addTo(map);
+      routeLayer.bringToFront();
+
+      els.routeDistance.textContent=formatDistance(route.distance);
+      els.routeDuration.textContent=formatDuration(route.duration);
+      els.routeInstruction.textContent=routeInstructionText(route);
+
+      if(fit){
+        showRouteOverview(true);
+      }
+    }catch(_){
+      els.routeDistance.textContent="—";
+      els.routeDuration.textContent="—";
+      els.routeInstruction.textContent="Bu cami için sürüş rotası alınamadı.";
+    }
+  }
+
+  function showRouteOverview(autoCountdown=false){
+    if(!routeLayer) return;
+    navigationOn=false;
+    navigationAutoCenter=true;
+    if(els.navRecenterBtn) els.navRecenterBtn.hidden=true;
+    document.body.classList.remove("navigation-mode");
+    els.navigationBtn.classList.remove("is-active");
+    els.navigationBtn.textContent="Navigasyona Dön";
+    map.fitBounds(routeLayer.getBounds(),{padding:[45,45]});
+    setTimeout(()=>map.invalidateSize(true),100);
+
+    if(routeOverviewTimer){
+      clearInterval(routeOverviewTimer);
+      routeOverviewTimer=null;
+    }
+    if(autoCountdown){
+      routeOverviewSeconds=10;
+      els.routeCountdown.hidden=false;
+      els.routeCountdown.textContent=`Güzergâh özeti · ${routeOverviewSeconds} sn`;
+      routeOverviewTimer=setInterval(()=>{
+        routeOverviewSeconds--;
+        if(routeOverviewSeconds<=0){
+          clearInterval(routeOverviewTimer);
+          routeOverviewTimer=null;
+          els.routeCountdown.hidden=true;
+          startMosqueNavigation();
+        }else{
+          els.routeCountdown.textContent=`Güzergâh özeti · ${routeOverviewSeconds} sn`;
+        }
+      },1000);
+    }else{
+      els.routeCountdown.hidden=true;
+    }
+  }
+
+  function startMosqueNavigation(){
+    if(!selectedMosque || !routeLayer) return;
+    if(routeOverviewTimer){
+      clearInterval(routeOverviewTimer);
+      routeOverviewTimer=null;
+    }
+    els.routeCountdown.hidden=true;
+    navigationOn=true;
+    navigationAutoCenter=true;
+    if(els.navRecenterBtn) els.navRecenterBtn.hidden=true;
+    document.body.classList.add("navigation-mode");
+    els.navigationBtn.classList.add("is-active");
+    els.navigationBtn.textContent="Navigasyon Açık";
+    els.followToggle.checked=false;
+    if(els.mobileFollowToggle) els.mobileFollowToggle.checked=false;
+    if(currentPosition) map.setView([currentPosition.lat,currentPosition.lng],18);
+    setTimeout(()=>map.invalidateSize(true),100);
+  }
+
+
+  function toggleNavigation(){
+    if(!selectedMosque || !routeLayer) return;
+    startMosqueNavigation();
+  }
+
 
   function setManualMode(enable) {
     manualLocation=enable;
@@ -1002,7 +1273,7 @@
     if(els.qiblaToggle) els.qiblaToggle.checked=qiblaOn;
     if(els.drawerQiblaToggle) els.drawerQiblaToggle.checked=qiblaOn;
 
-    if(els.duaBtn) els.duaBtn.hidden=!qiblaOn;
+    if(els.duaPrompt) els.duaPrompt.hidden=!qiblaOn;
 
     if(qiblaOn){
       // Kıble açılırsa bakış oku da otomatik açılsın.
@@ -1303,6 +1574,21 @@
   if(els.duaBtn)els.duaBtn.addEventListener("click",()=>{els.duaModal.hidden=false;});
   if(els.duaCloseBtn)els.duaCloseBtn.addEventListener("click",()=>{els.duaModal.hidden=true;});
   if(els.duaModal)els.duaModal.addEventListener("click",e=>{if(e.target===els.duaModal)els.duaModal.hidden=true;});
+
+  if(els.navRecenterBtn) els.navRecenterBtn.addEventListener("click",()=>{
+    if(!navigationOn || !currentPosition) return;
+    navigationAutoCenter=true;
+    els.navRecenterBtn.hidden=true;
+    map.setView(
+      [currentPosition.lat,currentPosition.lng],
+      Math.max(map.getZoom(),17),
+      {animate:true}
+    );
+  });
+
+  if(els.nearestMosqueBtn) els.nearestMosqueBtn.addEventListener("click",findNearbyMosques);
+  if(els.closeMosqueChooser) els.closeMosqueChooser.addEventListener("click",()=>{els.mosqueChooser.hidden=true;});
+  if(els.routeOverviewBtn) els.routeOverviewBtn.addEventListener("click",()=>showRouteOverview(false));
 
   loadTargets();
   // Varsayılanlar:

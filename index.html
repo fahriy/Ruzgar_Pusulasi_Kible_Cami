@@ -143,13 +143,29 @@
       <section class="map-wrap">
         <div id="map" aria-label="Rüzgâr haritası"></div>
 
-        <div class="place-search">
-          <form id="placeSearchForm" autocomplete="off">
-            <span class="search-icon">⌕</span>
+        <div class="place-search compact" id="placeSearch">
+          <button id="placeSearchToggle" class="place-search-toggle" type="button" aria-label="Yer ara">⌕</button>
+          <form id="placeSearchForm" autocomplete="off" hidden>
             <input id="placeSearchInput" type="search" placeholder="Yer, adres veya işletme ara…" />
             <button type="submit">Ara</button>
           </form>
           <div id="placeSearchResults" class="place-search-results" hidden></div>
+        </div>
+
+        <button id="navRecenterBtn" class="nav-recenter-btn" type="button" hidden>
+          <span>⌾</span><strong>Konumumu Ortala</strong>
+        </button>
+
+        <button id="nearestMosqueBtn" class="nearest-mosque-btn" type="button">
+          <span>☪</span><b>En Yakın Camiyi Bul</b>
+        </button>
+
+        <div id="mosqueChooser" class="mosque-chooser" hidden>
+          <div class="mosque-chooser-head">
+            <div><small>YAKIN CAMİLER</small><strong>Gitmek istediğin camiyi seç</strong></div>
+            <button id="closeMosqueChooser" type="button">×</button>
+          </div>
+          <div id="mosqueResults" class="mosque-results"></div>
         </div>
 
         <div id="routePanel" class="route-panel" hidden>
@@ -162,7 +178,11 @@
             <div><small>Süre</small><strong id="routeDuration">—</strong></div>
           </div>
           <div id="routeInstruction" class="route-instruction">Rota hazırlanıyor…</div>
-          <button id="navigationBtn" class="navigation-btn" type="button">Navigasyonu Başlat</button>
+          <div class="route-buttons">
+            <button id="routeOverviewBtn" class="route-secondary-btn" type="button">Özet Güzergâh</button>
+            <button id="navigationBtn" class="navigation-btn" type="button">Navigasyona Dön</button>
+          </div>
+          <div id="routeCountdown" class="route-countdown" hidden></div>
         </div>
 
         <div class="map-topbar">
@@ -180,7 +200,10 @@
           <strong>Kıble ile hizalandı</strong>
         </div>
 
-        <button id="duaBtn" class="dua-btn" type="button" hidden>Bir duanızı alırız</button>
+        <div id="duaPrompt" class="dua-prompt" hidden>
+          <button id="duaBtn" class="dua-btn" type="button">Bir duanızı alırız</button>
+          <div class="dua-click-hand" aria-hidden="true">☝</div>
+        </div>
         <div id="duaModal" class="dua-modal" hidden>
           <div class="dua-card">
             <button id="duaCloseBtn" class="dua-close" type="button">×</button>
