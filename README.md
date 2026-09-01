@@ -114,3 +114,11 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Haritadaki cami pinine dokununca doğrudan o caminin yol tarifi açılır.
 - Yeni bir cami/yer araması yapıldığında önceki cami sonuçları temizlenir.
 - Dua düğmesindeki parmak butonun tam üzerinde aşağı-yukarı basma hareketi yapar.
+
+
+## v10
+- Bakış okunun mobildeki merkez kayması düzeltildi.
+- Mobil görünümde iç ok 44×44 iken Leaflet ikonu 52×52 kaldığı için yaklaşık 4 px kayma oluşuyordu.
+- Bakış oku artık tüm ekranlarda aynı 52×52 koordinat sistemini kullanır.
+- GPS koordinatı, `iconAnchor [26,26]` ve okun dönüş merkezi aynı noktaya sabitlendi.
+- Görsel merkez kontrolü için okun merkezine küçük bir nokta eklendi.

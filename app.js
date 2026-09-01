@@ -1215,8 +1215,9 @@
   function headingIcon(heading){
     return L.divIcon({
       className:"heading-marker-wrap",
-      html:`<div class="heading-arrow-marker" style="transform:rotate(${heading}deg)"></div>`,
-      iconSize:[52,52],iconAnchor:[26,26]
+      html:`<div class="heading-arrow-marker" style="transform:rotate(${heading}deg)"><span class="heading-center-dot"></span></div>`,
+      iconSize:[52,52],
+      iconAnchor:[26,26]
     });
   }
 

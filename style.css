@@ -627,9 +627,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
   .qibla-aligned{top:52px;padding:6px 9px}
   .qibla-aligned span{width:20px;height:20px;font-size:12px}
   .qibla-aligned strong{font-size:9px}
-  .heading-arrow-marker{width:44px;height:44px}
-  .heading-arrow-marker:before{left:19px;top:5px;height:29px}
-  .heading-arrow-marker:after{left:12px;top:4px}
+
 }
 
 
@@ -1077,5 +1075,58 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
   }
   .place-search.compact.expanded form input{
     font-size:16px!important; /* iOS zoom engelle */
+  }
+}
+
+
+/* ===== v10: bakış oku GPS merkez düzeltmesi ===== */
+.heading-marker-wrap{
+  width:52px!important;
+  height:52px!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+}
+.heading-arrow-marker{
+  position:absolute!important;
+  left:0!important;
+  top:0!important;
+  width:52px!important;
+  height:52px!important;
+  margin:0!important;
+  transform-origin:26px 26px!important;
+  pointer-events:none!important;
+}
+.heading-center-dot{
+  position:absolute;
+  left:22px;
+  top:22px;
+  width:8px;
+  height:8px;
+  box-sizing:border-box;
+  border-radius:50%;
+  background:#38aaff;
+  border:2px solid #fff;
+  z-index:5;
+  box-shadow:0 2px 5px rgba(0,0,0,.45);
+}
+@media(max-width:760px){
+  .heading-marker-wrap,
+  .heading-arrow-marker{
+    width:52px!important;
+    height:52px!important;
+  }
+  .heading-arrow-marker:before{
+    left:23px!important;
+    top:5px!important;
+    width:6px!important;
+    height:34px!important;
+  }
+  .heading-arrow-marker:after{
+    left:16px!important;
+    top:4px!important;
+    width:14px!important;
+    height:14px!important;
   }
 }
