@@ -51,7 +51,10 @@
             <div class="eyebrow">HEDEFLER</div>
             <h2>İşaretli noktalar</h2>
           </div>
-          <button id="clearBtn" class="icon-danger" type="button" title="Tümünü sil">⌫</button>
+          <div class="target-head-actions">
+            <button id="addTargetModeBtn" class="icon-add" type="button" title="Hedef ekle">＋</button>
+            <button id="clearBtn" class="icon-danger" type="button" title="Tümünü sil">⌫</button>
+          </div>
         </div>
         <div id="emptyState" class="empty">
           Haritada bir noktaya tıkla. Hedefi daha sonra tutup sürükleyebilirsin.
@@ -122,16 +125,20 @@
         </div>
 
         <div id="qiblaAligned" class="qibla-aligned" hidden aria-live="polite">
-          <span>✓</span><strong>Kıble ile hizalandı</strong>
+          <strong>Kıble ile hizalandı</strong>
         </div>
 
         <div id="centerWind" class="center-wind" hidden aria-live="polite">
           <div class="center-reticle"></div>
           <div id="centerWindArrow" class="center-wind-arrow">➤</div>
           <div class="center-wind-chip">
-            <strong id="centerWindSpeed">—</strong>
             <span id="centerWindDirection">—</span>
           </div>
+        </div>
+
+        <div id="targetAddBanner" class="target-add-banner" hidden>
+          <span>Haritada hedef olarak eklemek istediğin noktaya dokun.</span>
+          <button id="cancelTargetAddBtn" type="button">İptal</button>
         </div>
 
         <div id="manualBanner" class="manual-banner" hidden>
@@ -181,8 +188,8 @@
         <button id="mobileRecenterBtn" type="button">
           <span>⌾</span><small>Konum</small>
         </button>
-        <button id="mobileQiblaBtn" type="button">
-          <span>◈</span><small>Kıble</small>
+        <button id="mobileAddTargetBtn" type="button">
+          <span>＋</span><small>Hedef Ekle</small>
         </button>
         <button id="mobileMenuBtn" type="button">
           <span>☰</span><small>Menü</small>
@@ -209,6 +216,7 @@
           <button id="drawerQiblaBtn" type="button"><span>◈</span><b>Kıble</b><small>Kâbe yönünü göster</small></button>
           <button id="drawerHeadingBtn" type="button"><span>➤</span><b>Bakış oku</b><small>Telefon yönünü göster</small></button>
           <button id="drawerCenterWindBtn" type="button"><span>⊕</span><b>Merkez rüzgârı</b><small>Harita ortasında göster</small></button>
+          <button id="drawerAddTargetBtn" type="button"><span>＋</span><b>Hedef ekle</b><small>Haritadan nokta seç</small></button>
         </div>
 
         <label class="mobile-gps-row">

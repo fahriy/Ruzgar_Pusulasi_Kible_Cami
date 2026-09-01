@@ -51,3 +51,13 @@ GitHub Pages HTTPS kullandığı için tarayıcı konum özelliği localhost dı
 - Hedef rüzgâr oklarında hız etiketi kaldırılmıştır.
 - Hedefler silinip eklendikçe 1,2,3... şeklinde yeniden numaralanır.
 - Geolocation uygulama içinde tek `watchPosition` ile başlatılır; gereksiz tekrar izin isteme çağrıları engellenmiştir.
+
+
+## v3 güncellemeleri
+- Merkez rüzgâr oku üzerinde hız yazısı kaldırıldı; hız yalnızca sol üst bilgi kartında kalır.
+- Rüzgâr güncellemesi 5 dakikaya çıkarıldı.
+- Haritaya tıklamak artık doğrudan hedef eklemez. Önce **Hedef Ekle** düğmesine basılır.
+- Hedef adları listeden düzenlenebilir.
+- Kıble hizalanmasında harita üstündeki yeşil onay işareti kaldırıldı; yalnızca "Kıble ile hizalandı" yazısı görünür.
+- Hizalanınca telefon yön oku görünür kalır.
+- Cihaz yönü sensörü sürekli dinlenir; telefon çevrildikçe yön oku anlık güncellenir.

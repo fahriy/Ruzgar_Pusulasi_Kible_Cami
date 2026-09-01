@@ -631,3 +631,38 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
   .heading-arrow-marker:before{left:19px;top:5px;height:29px}
   .heading-arrow-marker:after{left:12px;top:4px}
 }
+
+
+/* ===== Hedef ekleme modu / isim düzenleme ===== */
+.target-head-actions{display:flex;gap:6px}
+.icon-add{
+  width:36px;height:36px;border:1px solid rgba(70,169,255,.25);
+  border-radius:10px;background:rgba(70,169,255,.08);color:#62b5ff;
+  font-size:20px;font-weight:800
+}
+.icon-add.is-active{background:rgba(84,223,131,.12);border-color:rgba(84,223,131,.55);color:#6bed91}
+.target-add-banner{
+  position:absolute;left:50%;top:76px;transform:translateX(-50%);z-index:1310;
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;
+  background:rgba(8,18,27,.94);border:1px solid rgba(84,223,131,.45);
+  box-shadow:0 10px 30px rgba(0,0,0,.25);color:#e7f5eb;font-size:10px
+}
+.target-add-banner button{
+  border:0;border-radius:8px;padding:7px 10px;background:#2a3d4a;color:#fff;font-size:9px
+}
+.target-name-input{
+  width:100%;margin-top:5px;border:1px solid rgba(255,255,255,.10);
+  border-radius:7px;background:rgba(0,0,0,.18);color:#fff;padding:5px 7px;
+  font-size:10px;min-height:30px
+}
+.target-name-input:focus{border-color:rgba(70,169,255,.6);outline:none}
+.center-wind-chip span{font-size:9px;color:#f5d3dc;margin-left:0;font-weight:800}
+.qibla-aligned{padding:8px 12px}
+.qibla-aligned strong{font-size:10px;color:#dcffe7}
+.qibla-aligned span{display:none!important}
+
+@media(max-width:760px){
+  .target-add-banner{
+    left:8px;right:8px;top:52px;transform:none;justify-content:space-between
+  }
+}

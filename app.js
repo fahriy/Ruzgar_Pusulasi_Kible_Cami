@@ -26,6 +26,8 @@
   let centerWindOn = false;
   let headingArrowOn = false;
   let qiblaOn = false;
+  let targetAddMode = false;
+  let orientationListening = false;
   let windLayer = null;
   let windAbort = null;
   let windTimer = null;
@@ -67,14 +69,13 @@
     needle: $("needle"),
     centerWind: $("centerWind"),
     centerWindArrow: $("centerWindArrow"),
-    centerWindSpeed: $("centerWindSpeed"),
     centerWindDirection: $("centerWindDirection"),
     centerWindTop: $("centerWindTop"),
     centerWindBottom: $("centerWindBottom"),
     mobileWindBtn: $("mobileWindBtn"),
     mobileSatelliteBtn: $("mobileSatelliteBtn"),
     mobileRecenterBtn: $("mobileRecenterBtn"),
-    mobileQiblaBtn: $("mobileQiblaBtn"),
+    mobileAddTargetBtn: $("mobileAddTargetBtn"),
     mobileMenuBtn: $("mobileMenuBtn"),
     mobileDrawer: $("mobileDrawer"),
     mobileDrawerBackdrop: $("mobileDrawerBackdrop"),
@@ -93,7 +94,11 @@
     drawerQiblaBtn: $("drawerQiblaBtn"),
     drawerHeadingBtn: $("drawerHeadingBtn"),
     drawerCenterWindBtn: $("drawerCenterWindBtn"),
-    qiblaAligned: $("qiblaAligned")
+    qiblaAligned: $("qiblaAligned"),
+    addTargetModeBtn: $("addTargetModeBtn"),
+    drawerAddTargetBtn: $("drawerAddTargetBtn"),
+    targetAddBanner: $("targetAddBanner"),
+    cancelTargetAddBtn: $("cancelTargetAddBtn")
   };
 
   function initMap() {
@@ -151,17 +156,17 @@
 
   function loadTargets() {
     try {
-      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (!Array.isArray(raw)) return;
+      const raw=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+      if(!Array.isArray(raw)) return;
 
-      targets = raw
-        .filter(x => Number.isFinite(x?.lat) && Number.isFinite(x?.lng))
+      targets=raw
+        .filter(x=>Number.isFinite(x?.lat)&&Number.isFinite(x?.lng))
         .slice(0,50)
         .map((x,i)=>({
           id:i+1,
           lat:x.lat,
           lng:x.lng,
-          name:`Hedef ${i+1}`,
+          name:(typeof x.name==="string"&&x.name.trim())?x.name.trim():`Hedef ${i+1}`,
           color:COLORS[i%COLORS.length],
           line:null,
           marker:null
@@ -169,19 +174,20 @@
 
       nextId=targets.length+1;
       activeId=targets[0]?.id??null;
-    } catch(_) {}
+    }catch(_){}
   }
 
-  function renumberTargets(activeTargetRef=null) {
+  function renumberTargets(activeTargetRef=null){
     targets.forEach((t,i)=>{
+      const oldDefault=/^Hedef \d+$/.test(t.name||"");
       t.id=i+1;
-      t.name=`Hedef ${i+1}`;
+      if(oldDefault||!t.name) t.name=`Hedef ${i+1}`;
       t.color=COLORS[i%COLORS.length];
       if(t.marker) t.marker.setIcon(targetIcon(t.color));
       if(t.line) t.line.setStyle({color:t.color});
     });
     nextId=targets.length+1;
-    if(activeTargetRef && targets.includes(activeTargetRef)) activeId=activeTargetRef.id;
+    if(activeTargetRef&&targets.includes(activeTargetRef)) activeId=activeTargetRef.id;
     else if(!targets.some(t=>t.id===activeId)) activeId=targets[0]?.id??null;
   }
 
@@ -400,6 +406,15 @@
     }
   }
 
+  function setTargetAddMode(enabled){
+    targetAddMode=!!enabled;
+    if(els.targetAddBanner) els.targetAddBanner.hidden=!targetAddMode;
+    if(els.addTargetModeBtn) els.addTargetModeBtn.classList.toggle("is-active",targetAddMode);
+    if(els.mobileAddTargetBtn) els.mobileAddTargetBtn.classList.toggle("is-active",targetAddMode);
+    if(targetAddMode) map.getContainer().style.cursor="crosshair";
+    else map.getContainer().style.cursor="";
+  }
+
   function addTarget(lat,lng) {
     const id=targets.length+1;
     const t={
@@ -450,6 +465,12 @@
     renderTargetsList();
     updateCompass();
     if (windOn) refreshWind();
+  }
+
+  function escapeHtml(s){
+    return String(s??"").replace(/[&<>"']/g,c=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
   }
 
   function renderTargetsList() {
@@ -549,7 +570,7 @@
     stopWindInterval();
     windInterval=setInterval(() => {
       if (windOn) refreshWind();
-    }, 5 * 1000);
+    }, 5 * 60 * 1000);
   }
 
   function clearWindLayer() {
@@ -654,8 +675,7 @@
       els.centerWindArrow.style.transform =
         `translate(-50%,-50%) rotate(${toDir - 90}deg)`;
     }
-    if (els.centerWindSpeed) els.centerWindSpeed.textContent = `${Math.round(speed)} km/sa`;
-    if (els.centerWindDirection) els.centerWindDirection.textContent = `${Math.round(toDir)}° ${dir}`;
+    if(els.centerWindDirection) els.centerWindDirection.textContent=`${Math.round(toDir)}° ${dir}`;
     if (els.centerWindTop) els.centerWindTop.textContent = text;
     if (els.centerWindBottom) els.centerWindBottom.textContent = text;
   }
@@ -780,7 +800,7 @@
       const ss=String(now.getSeconds()).padStart(2,"0");
 
       els.windStatus.textContent=
-        `${centerAdded?"merkez":"—"} + ${targetCount} hedef · ${hh}:${mm}:${ss} · 5 sn`;
+        `${centerAdded?"merkez":"—"} + ${targetCount} hedef · ${hh}:${mm}:${ss} · 5 dk`;
 
     } catch(err) {
       if(err.name==="AbortError") return;
@@ -924,21 +944,8 @@
 
     if(els.qiblaAligned) els.qiblaAligned.hidden=!aligned;
 
-    if(aligned&&currentPosition){
-      const icon=L.divIcon({
-        className:"qibla-align-marker-wrap",
-        html:'<div class="qibla-align-marker">✓</div>',
-        iconSize:[34,34],iconAnchor:[17,17]
-      });
-      if(!qiblaAlignMarker){
-        qiblaAlignMarker=L.marker([currentPosition.lat,currentPosition.lng],{
-          icon,interactive:false,keyboard:false,zIndexOffset:2200
-        }).addTo(map);
-      }else{
-        qiblaAlignMarker.setLatLng([currentPosition.lat,currentPosition.lng]);
-        qiblaAlignMarker.setIcon(icon);
-      }
-    }else if(qiblaAlignMarker){
+    // Hizalanınca ayrıca harita işareti oluşturma; telefon bakış oku görünür kalır.
+    if(qiblaAlignMarker){
       map.removeLayer(qiblaAlignMarker);
       qiblaAlignMarker=null;
     }
@@ -1040,28 +1047,53 @@
   }
 
   async function enableOrientation(){
-    if(!("DeviceOrientationEvent" in window)){
-      els.orientationStatus.textContent="sensör desteklenmiyor";
-      return;
-    }
     try{
-      if(typeof DeviceOrientationEvent.requestPermission==="function"){
-        const r=await DeviceOrientationEvent.requestPermission();
-        if(r!=="granted"){
+      if(typeof DeviceOrientationEvent!=="undefined" &&
+         typeof DeviceOrientationEvent.requestPermission==="function"){
+        const permission=await DeviceOrientationEvent.requestPermission();
+        if(permission!=="granted"){
           els.orientationStatus.textContent="izin verilmedi";
           return;
         }
       }
-      window.addEventListener("deviceorientationabsolute",onOrientation,true);
-      window.addEventListener("deviceorientation",onOrientation,true);
-      els.orientationBtn.querySelector("span:last-child").textContent="Pusula Açık";
-      els.orientationBtn.disabled=true;
-      els.orientationStatus.textContent="sensör dinleniyor…";
-    }catch{
+
+      if(!orientationListening){
+        const handler=(event)=>{
+          let heading=null;
+
+          // iOS Safari
+          if(typeof event.webkitCompassHeading==="number"){
+            heading=event.webkitCompassHeading;
+          }
+          // Android / absolute orientation
+          else if(event.absolute && typeof event.alpha==="number"){
+            heading=normalize360(360-event.alpha);
+          }
+          // Generic fallback
+          else if(typeof event.alpha==="number"){
+            heading=normalize360(360-event.alpha);
+          }
+
+          if(heading==null||!Number.isFinite(heading)) return;
+
+          deviceHeading=normalize360(heading);
+          els.orientationStatus.textContent=`${Math.round(deviceHeading)}° ${directionText(deviceHeading)}`;
+          els.orientationBtn.querySelector("span:last-child").textContent="Pusula Açık";
+          updateCompass();
+          updateHeadingMarker();
+          updateQiblaAlignment();
+        };
+
+        window.addEventListener("deviceorientationabsolute",handler,true);
+        window.addEventListener("deviceorientation",handler,true);
+        orientationListening=true;
+      }
+
+      els.orientationStatus.textContent=deviceHeading==null?"sensör bekleniyor…":`${Math.round(deviceHeading)}° ${directionText(deviceHeading)}`;
+    }catch(err){
       els.orientationStatus.textContent="pusula açılamadı";
     }
   }
-
 
   function openMobileDrawer() {
     if (!els.mobileDrawer) return;
@@ -1089,7 +1121,7 @@
     if (els.mobileFollowToggle) els.mobileFollowToggle.checked=els.followToggle.checked;
     if(els.mobileWindStatus) els.mobileWindStatus.textContent=els.windStatus.textContent;
     if(els.mobileLocationStatus) els.mobileLocationStatus.textContent=els.locationStatus.textContent;
-    if(els.mobileQiblaBtn) els.mobileQiblaBtn.classList.toggle("is-active",qiblaOn);
+    if(els.mobileAddTargetBtn) els.mobileAddTargetBtn.classList.toggle("is-active",targetAddMode);
     if(els.drawerQiblaBtn) els.drawerQiblaBtn.classList.toggle("is-active",qiblaOn);
     if(els.drawerHeadingBtn) els.drawerHeadingBtn.classList.toggle("is-active",headingArrowOn);
     if(els.drawerCenterWindBtn) els.drawerCenterWindBtn.classList.toggle("is-active",centerWindOn);
@@ -1122,7 +1154,6 @@
   if (els.mobileWindBtn) els.mobileWindBtn.addEventListener("click",()=>{ toggleWind(); syncMobileControls(); });
   if (els.mobileSatelliteBtn) els.mobileSatelliteBtn.addEventListener("click",()=>{ toggleSatellite(); syncMobileControls(); });
   if (els.mobileRecenterBtn) els.mobileRecenterBtn.addEventListener("click",()=>els.recenterBtn.click());
-  if(els.mobileQiblaBtn) els.mobileQiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); });
   if (els.mobileMenuBtn) els.mobileMenuBtn.addEventListener("click",openMobileDrawer);
   if (els.mobileDrawerClose) els.mobileDrawerClose.addEventListener("click",closeMobileDrawer);
   if (els.mobileDrawerBackdrop) els.mobileDrawerBackdrop.addEventListener("click",closeMobileDrawer);
@@ -1156,6 +1187,15 @@
   if(els.drawerQiblaBtn) els.drawerQiblaBtn.addEventListener("click",async()=>{ await setQiblaEnabled(!qiblaOn); closeMobileDrawer(); });
   if(els.drawerHeadingBtn) els.drawerHeadingBtn.addEventListener("click",async()=>{ await setHeadingArrowEnabled(!headingArrowOn); });
   if(els.drawerCenterWindBtn) els.drawerCenterWindBtn.addEventListener("click",()=>setCenterWindEnabled(!centerWindOn));
+
+
+  if(els.addTargetModeBtn) els.addTargetModeBtn.addEventListener("click",()=>setTargetAddMode(!targetAddMode));
+  if(els.mobileAddTargetBtn) els.mobileAddTargetBtn.addEventListener("click",()=>setTargetAddMode(!targetAddMode));
+  if(els.drawerAddTargetBtn) els.drawerAddTargetBtn.addEventListener("click",()=>{
+    setTargetAddMode(true);
+    closeMobileDrawer();
+  });
+  if(els.cancelTargetAddBtn) els.cancelTargetAddBtn.addEventListener("click",()=>setTargetAddMode(false));
 
   loadTargets();
   // Varsayılanlar:
